@@ -8,6 +8,7 @@
 
 #include <string>
 #include <boost/lexical_cast.hpp>
+#include <list>
 
 #define DEFINE_PTR_CREATER(type)                                    \
             typedef std::shared_ptr<type> Ptr;                      \
@@ -19,8 +20,8 @@
 template<typename T>
 bool StringSplitToVectorAs(const std::string& str, char s, std::vector<T>& vec) {
     size_t pre = 0;
-    for (size_t i = 0; i < str.size(); ++i) {
-        if (str[i] == s || i == str.size() - 1) {
+    for (size_t i = 0; i <= str.size(); ++i) {
+        if (i == str.size() || str[i] == s) {
             vec.push_back(boost::lexical_cast<T>(&str[pre], i - pre));
             pre = i + 1;
         }
@@ -47,3 +48,8 @@ void SetLogLevel(int level);
 #define LOGWARN(msg)    LOG_IF_LEVEL(WARN, msg)
 #define LOGERROR(msg)   LOG_IF_LEVEL(ERROR, msg)
 #define LOGFATAL(msg)   LOG_IF_LEVEL(FATAL, msg)
+
+/**
+ * @brief 调整路径
+ */
+bool AdjustPath(std::string& path);

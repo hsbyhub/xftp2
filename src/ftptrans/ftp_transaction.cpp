@@ -40,6 +40,8 @@ int FtpTransactionManager::HandleRequest(const FtpRequest::Ptr req,
     int ret = trans->OnRequest(req, rsp);
 
     if (ret != -1) {
+        LOGDEBUG(XCO_EXP_VARS(rsp->ToString()));
+        rsp->state_code = ret;
         session->SendResponse(rsp);
     }
     return ret;
@@ -76,9 +78,8 @@ int FtpTransactionUSER::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
         || strcasecmp(req_name, "anonymous") == 0) {
         user_info_->name = "";
         user_info_->state = kFusAnonymousLogin;
-        rsp->state_code = 230;
         rsp->msg = "Anonymous login successful.";
-        return rsp->state_code;
+        return 230;
     }
 
     // 是否为第一次登录, 设置用户名
@@ -87,17 +88,15 @@ int FtpTransactionUSER::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     }
 
     // 验证用户名
-    if (user_info_->name == req->msg){
-        user_info_->state = kFusNeedPass;
-        rsp->state_code = 331;
-        rsp->msg = "Valid user, need password.";
-    }else {
+    if (user_info_->name != req->msg){
         user_info_->state = kFusLogout;
-        rsp->state_code = 221;
         rsp->msg = "Invalid user";
+        return 221;
     }
 
-    return rsp->state_code;
+    user_info_->state = kFusNeedPass;
+    rsp->msg = "Valid user, need password.";
+    return 331;
 }
 
 int FtpTransactionPASS::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
@@ -109,27 +108,21 @@ int FtpTransactionPASS::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 
     // 验证用户状态
     if (user_info_->state != kFusNeedPass) {
-        goto fail;
+        rsp->msg = "Invalid user";
+        return 221;
     }
 
     // 验证密码
     if (user_info_->pass != req->msg) {
-        goto fail;
+        rsp->msg = "Invalid password";
+        return 221;
     }
 
+    // 设置登录
     user_info_->state = kFusLogin;
-    // todo 设置目录
 
-    rsp->state_code = 230;
     rsp->msg = "Login successful";
-
-    return rsp->state_code;
-
-fail:
-    user_info_->state = kFusLogout;
-    rsp->state_code = 221;
-    rsp->msg = "Invalid user";
-    return rsp->state_code;
+    return 230;
 }
 
 int FtpTransactionSYST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
@@ -137,10 +130,8 @@ int FtpTransactionSYST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
         return -1;
     }
 
-    rsp->state_code = 211;
     rsp->msg = "Linux";
-
-    return rsp->state_code;
+    return 211;
 }
 
 int FtpTransactionPORT::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
@@ -150,18 +141,16 @@ int FtpTransactionPORT::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 
     // 检查状态
     if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
-        rsp->state_code = 530;
         rsp->msg = "No login";
-        return rsp->state_code;
+        return 530;
     }
 
     // 解析地址
     std::vector<int> vec;
     StringSplitToVectorAs(req->msg, ',', vec);
     if (vec.size() != 6) {
-        rsp->state_code = 501;
         rsp->msg = "Argument error";
-        return rsp->state_code;
+        return 501;
     }
 
     // 构造地址
@@ -172,20 +161,32 @@ int FtpTransactionPORT::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
             remote_addr_str += ".";
         }
     }
-    auto remote_addr = xco::Ipv4Address::Create(remote_addr_str.c_str(), vec[4] * 256 + vec[5]);
-    if (!remote_addr) {
-        rsp->state_code = 504;
-        return rsp->state_code;
+    LOGDEBUG(XCO_EXP_VARS(vec[4], vec[5], vec[4]*256+vec[5]));
+    auto addr = xco::Ipv4Address::Create(remote_addr_str.c_str(), vec[4] * 256 + vec[5]);
+    if (!addr) {
+        return 504;
     }
-    user_info_->port_addr = remote_addr;
+    user_info_->port_addr = addr;
+    LOGDEBUG(XCO_EXP_VARS(addr->ToString()));
 
-    rsp->state_code = 200;
     rsp->msg = "PORT command successful. Consider using PASV.";
-    return rsp->state_code;
+    return 200;
 }
 
 int FtpTransactionPWD::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
-    return BaseFtpTransaction::OnRequest(req, rsp);
+    if (!user_info_) {
+        return -1;
+    }
+
+    // 检查状态
+    if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
+        rsp->msg = "No login";
+        return 530;
+    }
+
+    // 设置目录
+
+    return rsp->state_code;
 }
 
 int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
@@ -193,6 +194,19 @@ int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
         return -1;
     }
 
-    //
+    // 检查状态
+    if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
+        rsp->msg = "No login";
+        return 530;
+    }
+
+    // 主动连接数据通道
+    if (!user_info_->CreateDataSession()) {
+        rsp->msg = "Create data connect fail.";
+        return 504;
+    }
+
+    // 打开当前目录
+
     return rsp->state_code;
 }

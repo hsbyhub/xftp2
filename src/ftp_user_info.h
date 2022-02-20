@@ -8,6 +8,7 @@
 
 #include <xco/common.h>
 #include <unordered_map>
+#include <list>
 #include "common.h"
 #include "ftp_session.h"
 #include "ftp_server.h"
@@ -22,17 +23,42 @@ enum FtpUserState {
 class FtpUserInfoManager;
 struct FtpUserInfo : public BaseDump {
 
-    void SetCurDir(const std::string& d) {
+    bool SetCurDir(std::string d) {
+        if (!AdjustPath(d)) {
 
+        }
+        if (d.empty()) {
+            return false;
+        }
+
+        if (d[0] == '/') {
+            cur_dir = d;
+        }else {
+            auto dir = root_dir + "/" + d;
+
+        }
+
+        return true;
     }
 
     bool CreateDataSession() {
+
+        // 关闭旧会话
         CloseDataSession();
 
         // 主动发起连接
         auto socket = xco::Socket::CreateTCP();
-        socket->Init();
+        if (!socket->Init()) {
+            socket->Close();
+            return false;
+        }
+        // if (!socket->Bind(xco::Ipv4Address::Create("127.0.0.1", 20))) {
+        //     LOGDEBUG("socket bind fail");
+        //     socket->Close();
+        //     return false;
+        // }
         if (!socket->Connect(port_addr)) {
+            socket->Close();
             return false;
         }
 
@@ -51,7 +77,7 @@ struct FtpUserInfo : public BaseDump {
 
     DEFINE_PTR_CREATER(FtpUserInfo);
     std::string         name;                               // 名字
-    std::string         pass                    = "123456"; // 密码
+    std::string         pass                    = "123";    // 密码
     std::string         root_dir                = FtpServerConfigSgt.GetRootDir();// 根目录
     std::string         cur_dir;                            // 当前目录
     int                 state                   = 0;        // 状态
