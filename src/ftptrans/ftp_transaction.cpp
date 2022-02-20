@@ -185,8 +185,10 @@ int FtpTransactionPWD::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp
     }
 
     // 设置目录
+    user_info_->SetCurDir(req->msg);
 
-    return rsp->state_code;
+    rsp->msg = "\"" + user_info_->cur_dir + "\" is current diretory";
+    return 257;
 }
 
 int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {

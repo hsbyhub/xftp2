@@ -24,18 +24,10 @@ class FtpUserInfoManager;
 struct FtpUserInfo : public BaseDump {
 
     bool SetCurDir(std::string d) {
-        if (!AdjustPath(d)) {
-
-        }
-        if (d.empty()) {
-            return false;
-        }
-
-        if (d[0] == '/') {
+        if (AdjustPath(d)) {
             cur_dir = d;
         }else {
-            auto dir = root_dir + "/" + d;
-
+            cur_dir = "";
         }
 
         return true;
@@ -52,11 +44,6 @@ struct FtpUserInfo : public BaseDump {
             socket->Close();
             return false;
         }
-        // if (!socket->Bind(xco::Ipv4Address::Create("127.0.0.1", 20))) {
-        //     LOGDEBUG("socket bind fail");
-        //     socket->Close();
-        //     return false;
-        // }
         if (!socket->Connect(port_addr)) {
             socket->Close();
             return false;
