@@ -162,13 +162,11 @@ int FtpTransactionPORT::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
             remote_addr_str += ".";
         }
     }
-    LOGDEBUG(XCO_EXP_VARS(vec[4], vec[5], vec[4]*256+vec[5]));
     auto addr = xco::Ipv4Address::Create(remote_addr_str.c_str(), vec[4] * 256 + vec[5]);
     if (!addr) {
         return 504;
     }
     user_info_->port_addr = addr;
-    LOGDEBUG(XCO_EXP_VARS(addr->ToString()));
 
     rsp->msg = "PORT command successful. Consider using PASV.";
     return 200;
@@ -251,7 +249,13 @@ int FtpTransactionCWD::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp
         return -1;
     }
 
-    // 调整路径
+    // 检查状态
+    if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
+        rsp->msg = "No login";
+        return 530;
+    }
+
+    // 设置路径
     user_info_->SetCurDir(user_info_->cur_dir + req->msg);
 
     rsp->msg = "Change diretory success. \"" + user_info_->cur_dir + "\" is current diretory.";
