@@ -11,13 +11,14 @@
 class FtpTransactionManager;
 
 enum FtpCmd {
-    kFcNull     = 0,
-    kFcUSER     = 1,
-    kFcPASS     = 2,
-    kFcPORT     = 3,
-    kFcSYST     = 4,
-    kFcPWD      = 5,
-    kFcLIST     = 6,
+    kFcNull = 0,
+    kFcUSER = 1,
+    kFcPASS = 2,
+    kFcPORT = 3,
+    kFcSYST = 4,
+    kFcPWD  = 5,
+    kFcLIST = 6,
+    kFcCWD  = 7,
 };
 
 
@@ -33,6 +34,7 @@ public:
 
 protected:
     FtpUserInfo::Ptr    user_info_      = nullptr;  // 用户信息
+    FtpSession::Ptr     cmd_session     = nullptr;  // 命令通道
 };
 
 class FtpTransactionManager {
@@ -103,3 +105,4 @@ DEFINE_TRANSACTION(SYST);
 DEFINE_TRANSACTION(PORT);
 DEFINE_TRANSACTION(PWD);
 DEFINE_TRANSACTION(LIST);
+DEFINE_TRANSACTION(CWD);

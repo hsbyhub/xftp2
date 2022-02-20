@@ -6,6 +6,7 @@
  *================================================================*/
 
 #include "ftp_transaction.h"
+#include <memory>
 
 FtpTransactionManager::~FtpTransactionManager() {
     for (auto it : cmd_to_trans_type_bucket_) {
@@ -37,10 +38,10 @@ int FtpTransactionManager::HandleRequest(const FtpRequest::Ptr req,
 
     auto trans = it->second->Create();
     trans->user_info_ = user_info;
+    trans->cmd_session = session;
     int ret = trans->OnRequest(req, rsp);
 
     if (ret != -1) {
-        LOGDEBUG(XCO_EXP_VARS(rsp->ToString()));
         rsp->state_code = ret;
         session->SendResponse(rsp);
     }
@@ -198,17 +199,61 @@ int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 
     // 检查状态
     if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
-        rsp->msg = "No login";
+        rsp->msg = "No login.";
         return 530;
     }
 
     // 主动连接数据通道
     if (!user_info_->CreateDataSession()) {
         rsp->msg = "Create data connect fail.";
-        return 504;
+        return 425;
     }
 
-    // 打开当前目录
+    // 通知客户端连接正常
+    if (!cmd_session) {
+        return -1;
+    }
+    auto tmp_rsp = FtpResponse::Create();
+    tmp_rsp->state_code = 150;
+    tmp_rsp->msg = "Connect success. Here comes the list data.";
+    cmd_session->SendResponse(tmp_rsp);
 
-    return rsp->state_code;
+    // 开始发送数据
+    std::string data = "";
+    std::string cmd = "ls -l " + user_info_->root_dir + user_info_->cur_dir;
+    FILE *file = popen(cmd.c_str(), "r");
+    if (!file) {
+        rsp->msg = "Open diretory fail.";
+        return 550;
+    }
+    char buf[1024];
+    bzero(buf, sizeof(buf));
+    while (true) {
+        int len = fread(buf, 1, sizeof(buf), file);
+        if (len <= 0){
+            break;
+        }
+        int ret = user_info_->data_session->Write(buf, len);
+        if (ret <= 0) {
+            break;
+        }
+    }
+    pclose(file);
+
+    // 结束连接
+    user_info_->data_session->Close();
+
+    return 225;
+}
+
+int FtpTransactionCWD::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
+    if (!user_info_) {
+        return -1;
+    }
+
+    // 调整路径
+    user_info_->SetCurDir(user_info_->cur_dir + req->msg);
+
+    rsp->msg = "Change diretory success. \"" + user_info_->cur_dir + "\" is current diretory.";
+    return 257;
 }

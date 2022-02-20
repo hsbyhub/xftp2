@@ -78,18 +78,20 @@ FtpRequest::Ptr FtpSession::GetRequest() {
         return nullptr;
     }
     std::string cmd(buffer, cmd_off, cmd_len);
-    FtpRequest::Ptr req = nullptr;
+    std::string msg;
     if (msg_off != -1 && msg_len) {
-        std::string msg(buffer, msg_off, msg_len);
-        return FtpRequest::Create(std::move(cmd), std::move(msg));
+        msg = std::string (buffer, msg_off, msg_len);
     }
-    return FtpRequest::Create(cmd);
+    auto req = FtpRequest::Create(cmd, msg);
+    LOGDEBUG(XCO_EXP_VARS(req->ToString()));
+    return req;
 }
 
 int FtpSession::SendResponse(FtpResponse::Ptr rsp) {
     if (!rsp) {
         return -1;
     }
+    LOGDEBUG(XCO_EXP_VARS(rsp->ToString()));
     auto buf = rsp->ToString();
     return Write(&buf[0], buf.size());
 }

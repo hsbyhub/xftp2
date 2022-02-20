@@ -28,6 +28,7 @@ struct FtpUserInfo : public BaseDump {
             cur_dir = d;
         }else {
             cur_dir = "";
+            return false;
         }
 
         return true;
