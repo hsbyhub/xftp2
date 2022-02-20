@@ -29,7 +29,7 @@ void FtpServer::ClientHandle(xco::Socket::Ptr client) {
         if (!req) {
             break;
         }
-        LOGDEBUG(XCO_VARS_EXP(req->ToString()));
+        LOGDEBUG(XCO_EXP_VARS(req->ToString()));
 
         int ret = FtpTransactionManagerSgt.HandleRequest(req, ftp_session, user_info);
         if (ret == -1) {

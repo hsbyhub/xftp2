@@ -8,21 +8,26 @@
 
 #include "ftp_user_info.h"
 
+class FtpTransactionManager;
+
 enum FtpCmd {
     kFcNull     = 0,
     kFcUSER     = 1,
     kFcPASS     = 2,
+    kFcPORT     = 3,
+    kFcSYST     = 4,
+    kFcPWD      = 5,
+    kFcLIST     = 6,
 };
 
 
-class FtpTransactionManager;
+// 基础的Ftp事务
 class BaseFtpTransaction {
 public:
     friend FtpTransactionManager;
     DEFINE_PTR_CREATER(BaseFtpTransaction);
 
 public:
-
     virtual int OnRequest(const FtpRequest::Ptr req,
                           FtpResponse::Ptr rsp){ return -1; }
 
@@ -30,18 +35,17 @@ protected:
     FtpUserInfo::Ptr    user_info_      = nullptr;  // 用户信息
 };
 
-struct ITypeBucket {
-    virtual ~ITypeBucket(){}
-    virtual std::shared_ptr<BaseFtpTransaction> Create(){ return nullptr; }
-};
-template<typename Type>
-struct TypeBucket : ITypeBucket {
-    typename BaseFtpTransaction::Ptr Create() {
-        return Type::Create();
-    }
-};
-
 class FtpTransactionManager {
+    struct ITypeBucket {
+        virtual ~ITypeBucket(){}
+        virtual std::shared_ptr<BaseFtpTransaction> Create(){ return nullptr; }
+    };
+    template<typename Type>
+    struct TypeBucket : ITypeBucket {
+        typename BaseFtpTransaction::Ptr Create() {
+            return Type::Create();
+        }
+    };
 public:
     ~FtpTransactionManager();
 public:
@@ -55,7 +59,6 @@ public:
         if (type_bucket) {
             return false;
         }
-        LOGDEBUG(XCO_VARS_EXP(cmd, GetTypeName<TransType>()));
         type_bucket = new TypeBucket<TransType>;
         return true;
     }
@@ -90,3 +93,13 @@ inline bool RegisterTransactionHelper(int cmd, const char* cmd_str) {
         int OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) override;\
     };                                                      \
     REGISTER_TRANSACTION(cmd);
+
+
+
+// 事务实现
+DEFINE_TRANSACTION(USER);
+DEFINE_TRANSACTION(PASS);
+DEFINE_TRANSACTION(SYST);
+DEFINE_TRANSACTION(PORT);
+DEFINE_TRANSACTION(PWD);
+DEFINE_TRANSACTION(LIST);

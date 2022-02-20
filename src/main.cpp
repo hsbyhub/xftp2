@@ -7,8 +7,10 @@
 
 #include <iostream>
 #include <ftp_server.h>
+#include <xco/common.h>
 
 int main(int argc, char** argv) {
+    // xco::SetLogLevel(5);
     auto listen_socket = xco::Socket::CreateTCP();
     listen_socket->Init();
     listen_socket->Bind(xco::Ipv4Address::Create("0.0.0.0", 21));
