@@ -9,8 +9,8 @@
 #include <memory>
 #include <fstream>
 
-const int g_buf_size = 100 * 1024;
-char g_buffer[g_buf_size] = {0};
+const int g_buffer_size = 10 * 1024 * 1024;
+char g_buffer[g_buffer_size] = {0};
 
 bool BaseFtpTransaction::CreateDataSession() {
     // 关闭旧会话
@@ -326,28 +326,24 @@ int FtpTransactionRETR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
         rsp->msg = "Open file fail.";
         return 550;
     }
-    int total = 0;
     while(true) {
         int len = 0;
         try {
-             len = fread(g_buffer, 1, g_buf_size, file);
+             len = fread(g_buffer, 1, g_buffer_size, file);
         }catch (...) {
             return 451;
         }
         if (len <= 0) {
-            break;
+            return 550;
         }
-        LOGDEBUG(XCO_EXP_VARS(len));
         for (int write_len = 0; write_len < len; ) {
             int ret = data_session->Write(g_buffer, len - write_len);
             if (ret <= 0) {
                 return 426;
             }
             write_len += ret;
-            total += ret;
         }
     }
-    LOGDEBUG(XCO_EXP_VARS(total));
 
     rsp->msg = "Transfer done. Close the data connection.";
     return 226;
