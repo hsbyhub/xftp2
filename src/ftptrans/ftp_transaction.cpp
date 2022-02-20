@@ -334,7 +334,7 @@ int FtpTransactionRETR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
             return 451;
         }
         if (len <= 0) {
-            return 550;
+            break;
         }
         for (int write_len = 0; write_len < len; ) {
             int ret = data_session->Write(g_buffer, len - write_len);
