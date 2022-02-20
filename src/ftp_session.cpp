@@ -6,13 +6,21 @@
  *================================================================*/
 #include "ftp_session.h"
 
+FtpSession::FtpSession(xco::Socket::Ptr client) : xco::SocketStream(client) { }
+
 FtpRequest::Ptr FtpSession::GetRequest() {
-    auto req = FtpRequest::Create();
-    char* buffer = req->buffer;
-    size_t buffer_len = req->buffer_len;
+    // char* buffer = req->buffer;
+    char buffer[MAX_FTP_REQUEST_BUFFER_LEN];
+    size_t buffer_len = MAX_FTP_REQUEST_BUFFER_LEN;
 
     size_t parse_off = 0;
     size_t read_off = 0;
+
+    int32_t cmd_off     = -1;
+    size_t  cmd_len     = 0;
+    int32_t msg_off     = -1;
+    size_t  msg_len     = 0;
+
     bool is_finish = false;
     while(read_off < buffer_len) {
         int len = Read(buffer, buffer_len - read_off);
@@ -22,36 +30,73 @@ FtpRequest::Ptr FtpSession::GetRequest() {
         read_off += len;
         for (; parse_off < read_off; parse_off++) {
             do {
-                if (req->cmd_off == -1) {
-                    if (buffer[parse_off] != ' ') {
-                        req->cmd_off = parse_off;
+                if (buffer[parse_off] == '\n') {
+                    if (parse_off <= 0) {
+                        return nullptr;
                     }
-                    break;
-                }
-                if (req->cmd_len == 0) {
-                    if (buffer[parse_off] == ' ') {
-                        req->cmd_len = parse_off - req->cmd_off;
-                    }
-                    break;
-                }
-                if (req->msg_len == -1) {
-                    if (buffer[parse_off] != ' ') {
-                        req->msg_off = parse_off;
-                    }
-                    break;
-                }
-                if (req->msg_len == 0) {
-                    if (buffer[parse_off] == '\n') {
-                        if (buffer[parse_off - 1] == '\r') {
-                            is_finish = true;
-                        }else {
-                            return nullptr;
+                    if (buffer[parse_off - 1] == '\r') {
+                        if (msg_off != -1) {
+                            msg_len = parse_off - 1 - msg_off;
+                        }else if (cmd_off != -1) {
+                            cmd_len = parse_off - 1 - cmd_off;
                         }
+                        is_finish = true;
+                        break;
+                    }else {
+                        return nullptr;
                     }
-                    break;
                 }
 
+                if (cmd_off == -1) {
+                    if (buffer[parse_off] != ' ') {
+                        cmd_off = parse_off;
+                    }
+                    break;
+                }
+                if (cmd_len == 0) {
+                    if (buffer[parse_off] == ' ') {
+                        cmd_len = parse_off - cmd_off;
+                    }
+                    break;
+                }
+                if (msg_off == -1) {
+                    if (buffer[parse_off] != ' ') {
+                        msg_off = parse_off;
+                    }
+                    break;
+                }
             }while(false);
+            if(is_finish) {
+                break;
+            }
+        }
+        if (is_finish) {
+            break;
         }
     }
+    if (!is_finish || cmd_off == -1 || cmd_len == 0) {
+        return nullptr;
+    }
+    std::string cmd(buffer, cmd_off, cmd_len);
+    FtpRequest::Ptr req = nullptr;
+    if (msg_off != -1 && msg_len) {
+        std::string msg(buffer, msg_off, msg_len);
+        return FtpRequest::Create(std::move(cmd), std::move(msg));
+    }
+    return FtpRequest::Create(cmd);
+}
+
+int FtpSession::SendResponse(FtpResponse::Ptr rsp) {
+    if (!rsp) {
+        return -1;
+    }
+    auto buf = rsp->ToString();
+    return Write(&buf[0], buf.size());
+}
+
+int FtpSession::SendData(const std::string &data) {
+    if (data.empty()) {
+        return -1;
+    }
+    return Write(&data[0], data.size());
 }

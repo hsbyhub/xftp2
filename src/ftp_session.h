@@ -7,47 +7,57 @@
 #pragma once
 
 #include <xco/socket_stream.h>
+#include "common.h"
 
 const int MAX_FTP_REQUEST_BUFFER_LEN = 128;
+const int MAX_FTP_RESPONSE_BUFFER_LEN = 2 * 1024 * 1024;
 
 struct FtpRequest : public BaseDump{
-    typedef std::shared_ptr<FtpRequest> Ptr;
-    static FtpRequest::Ptr Create() {
-        return std::shared_ptr<FtpRequest>(new FtpRequest);
-    }
+    DEFINE_PTR_CREATER(FtpRequest);
+
+    FtpRequest(const std::string& c, const std::string& m = "") : cmd(c), msg(m) {}
+    FtpRequest(std::string&& c, std::string&& m = "") : cmd(std::move(c)), msg(std::move(m)) {}
 
     void Dump(std::ostream &os) const override {
         os << "FtpRequest{";
         os << "Cmd=";
-        if (cmd_len) {
-            assert(cmd_off > -1);
-            for (int i = cmd_off; i < cmd_off + cmd_len; ++i) {
-                os << buffer[i];
-            }
+        if (cmd.size()) {
+            os << cmd;
         }else {
             os << "null";
         }
         os << ", Msg=";
-        if (msg_len) {
-            assert(msg_off > -1);
-            for (int i = msg_off; i < msg_off + msg_len; ++i) {
-                os << buffer[i];
-            }
+        if (msg.size()) {
+            os << msg;
         }else {
             os << "null";
         }
         os << "}";
     }
 
-    char buffer[MAX_FTP_REQUEST_BUFFER_LEN];
-    size_t  buffer_len  = MAX_FTP_REQUEST_BUFFER_LEN;
-    int32_t cmd_off     = -1;
-    size_t  cmd_len     = 0;
-    int32_t msg_off     = -1;
-    size_t  msg_len     = 0;
+    std::string cmd;
+    std::string msg;
 };
 
-class FtpSession : xco::SocketStream {
+struct FtpResponse : public BaseDump {
+    DEFINE_PTR_CREATER(FtpResponse);
+
+    void Dump(std::ostream &os) const override {
+        os << state_code << " " << msg << "\r\n";
+    }
+
+    int state_code  = 0;
+    std::string msg;
+};
+
+class FtpSession : public xco::SocketStream {
+public:
+    DEFINE_PTR_CREATER(FtpSession)
+
+protected:
+    FtpSession(xco::Socket::Ptr client);
 public:
     FtpRequest::Ptr GetRequest();
+    int SendResponse(FtpResponse::Ptr rsp);
+    int SendData(const std::string& data);
 };

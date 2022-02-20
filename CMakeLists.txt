@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS "$ENV{CXXFLAAGS} -O3 -std=c++11 -g -Wall -Wno-deprecated -We
 
 # Add to target
 set(libs xco)
-file(GLOB files ${PROJECT_SOURCE_DIR}/src/*.cpp)
+file(GLOB files ${PROJECT_SOURCE_DIR}/src/*.cpp ${PROJECT_SOURCE_DIR}/src/ftptrans/*.cpp)
 add_executable(ftp_server ${files})
 target_link_libraries(ftp_server ${libs})
 
