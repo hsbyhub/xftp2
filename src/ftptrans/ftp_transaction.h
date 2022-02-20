@@ -80,3 +80,13 @@ inline bool RegisterTransactionHelper(int cmd, const char* cmd_str) {
 // 注册FtpTransactionXXX
 #define REGISTER_TRANSACTION(cmd) \
             static bool ret_register_##cmd = RegisterTransactionHelper<FtpTransaction##cmd>(kFc##cmd, #cmd);
+
+// 声明FtpTransactionXXX
+#define DEFINE_TRANSACTION(cmd)                             \
+    class FtpTransaction##cmd : public BaseFtpTransaction { \
+    public:                                                 \
+        DEFINE_PTR_CREATER(FtpTransaction##cmd);            \
+    public:                                                 \
+        int OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) override;\
+    };                                                      \
+    REGISTER_TRANSACTION(cmd);
