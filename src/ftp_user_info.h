@@ -34,34 +34,6 @@ struct FtpUserInfo : public BaseDump {
         return true;
     }
 
-    bool CreateDataSession() {
-
-        // 关闭旧会话
-        CloseDataSession();
-
-        // 主动发起连接
-        auto socket = xco::Socket::CreateTCP();
-        if (!socket->Init()) {
-            socket->Close();
-            return false;
-        }
-        if (!socket->Connect(port_addr)) {
-            socket->Close();
-            return false;
-        }
-
-        // 建立会话
-        data_session = FtpSession::Create(socket);
-
-        return true;
-    }
-
-    void CloseDataSession() {
-        if (data_session) {
-            data_session->Close();
-            data_session = nullptr;
-        }
-    }
 
     DEFINE_PTR_CREATER(FtpUserInfo);
     std::string         name;                               // 名字
@@ -70,7 +42,6 @@ struct FtpUserInfo : public BaseDump {
     std::string         cur_dir;                            // 当前目录
     int                 state                   = 0;        // 状态
     int64_t             last_active_time_sec    = 0;        // 上一次活跃时间(用于内存淘汰)
-    FtpSession::Ptr     data_session            = nullptr;  // 客户端会话(数据通道)
     xco::Ipv4Address::Ptr    port_addr          = nullptr;  // 客户端地址(建立数据通道)
 };
 

@@ -30,10 +30,12 @@ void FtpServer::ClientHandle(xco::Socket::Ptr client) {
             continue;
         }
 
-        int ret = FtpTransactionManagerSgt.HandleRequest(req, ftp_session, user_info);
-        if (ret == -1) {
+        int state = FtpTransactionManagerSgt.HandleRequest(req, ftp_session, user_info);
+        if (state == -1) {
             break;
         }
     }
+
+    // 关闭会话
     ftp_session->Close();
 }

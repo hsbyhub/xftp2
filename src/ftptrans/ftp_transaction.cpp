@@ -7,6 +7,38 @@
 
 #include "ftp_transaction.h"
 #include <memory>
+#include <fstream>
+
+const int g_buf_size = 1024 * 1024;
+char g_buffer[g_buf_size] = {0};
+
+bool BaseFtpTransaction::CreateDataSession() {
+    // 关闭旧会话
+    CloseDataSession();
+
+    // 主动发起连接
+    auto socket = xco::Socket::CreateTCP();
+    if (!socket->Init()) {
+        socket->Close();
+        return false;
+    }
+    if (!socket->Connect(user_info_->port_addr)) {
+        socket->Close();
+        return false;
+    }
+
+    // 建立会话
+    data_session = FtpSession::Create(socket);
+
+    return true;
+}
+void BaseFtpTransaction::CloseDataSession() {
+    if (data_session) {
+        data_session->Close();
+        data_session = nullptr;
+    }
+
+}
 
 FtpTransactionManager::~FtpTransactionManager() {
     for (auto it : cmd_to_trans_type_bucket_) {
@@ -39,13 +71,17 @@ int FtpTransactionManager::HandleRequest(const FtpRequest::Ptr req,
     auto trans = it->second->Create();
     trans->user_info_ = user_info;
     trans->cmd_session = session;
-    int ret = trans->OnRequest(req, rsp);
+    int state = trans->OnRequest(req, rsp);
 
-    if (ret != -1) {
-        rsp->state_code = ret;
+    // 关闭数据通道
+    trans->CloseDataSession();
+
+    if (state != -1) {
+        rsp->state_code = state;
         session->SendResponse(rsp);
     }
-    return ret;
+
+    return state;
 }
 
 bool FtpTransactionManager::SetCmdFromStr(const std::string &cmd_str, int cmd) {
@@ -202,7 +238,7 @@ int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     }
 
     // 主动连接数据通道
-    if (!user_info_->CreateDataSession()) {
+    if (!CreateDataSession()) {
         rsp->msg = "Create data connect fail.";
         return 425;
     }
@@ -211,10 +247,7 @@ int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     if (!cmd_session) {
         return -1;
     }
-    auto tmp_rsp = FtpResponse::Create();
-    tmp_rsp->state_code = 150;
-    tmp_rsp->msg = "Connect success. Here comes the list data.";
-    cmd_session->SendResponse(tmp_rsp);
+    cmd_session->SendData("150 Connect success. Here comes the list data. \r\n");
 
     // 开始发送数据
     std::string data = "";
@@ -224,23 +257,19 @@ int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
         rsp->msg = "Open diretory fail.";
         return 550;
     }
-    char buf[1024];
-    bzero(buf, sizeof(buf));
     while (true) {
-        int len = fread(buf, 1, sizeof(buf), file);
+        int len = fread(g_buffer, 1, sizeof(g_buffer), file);
         if (len <= 0){
             break;
         }
-        int ret = user_info_->data_session->Write(buf, len);
+        int ret = data_session->Write(g_buffer, len);
         if (ret <= 0) {
             break;
         }
     }
     pclose(file);
 
-    // 结束连接
-    user_info_->data_session->Close();
-
+    rsp->msg = "Transfer done. Close the data connection.";
     return 225;
 }
 
@@ -260,4 +289,55 @@ int FtpTransactionCWD::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp
 
     rsp->msg = "Change diretory success. \"" + user_info_->cur_dir + "\" is current diretory.";
     return 257;
+}
+
+int FtpTransactionRETR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
+    if (!user_info_) {
+        return -1;
+    }
+
+    // 检查状态
+    if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
+        rsp->msg = "No login.";
+        return 530;
+    }
+
+    // 主动连接数据通道
+    if (!CreateDataSession()) {
+        rsp->msg = "Create data connect fail.";
+        return 425;
+    }
+
+    // 通知客户端连接正常
+    if (!cmd_session) {
+        return -1;
+    }
+    cmd_session->SendData("150 Connect success. Here comes the list data. \r\n");
+
+    // 打开文件，开始传输
+    auto file_path = req->msg;
+    AdjustPath(file_path);
+    std::string path = user_info_->root_dir + user_info_->cur_dir + file_path;
+    if (path.back() == '/') {
+        path.pop_back();
+    }
+    auto file = fopen(path.c_str(), "rb");
+    if (!file) {
+        rsp->msg = "Open file fail.";
+        return 550;
+    }
+    while(true) {
+        int len = fread(g_buffer, 1, g_buf_size, file);
+        if (len <= 0) {
+            break;
+        }
+        LOGDEBUG("read data=" << std::string(g_buffer, len));
+        int ret = data_session->Write(g_buffer, len);
+        if (ret <= 0) {
+            break;
+        }
+    }
+
+    rsp->msg = "Transfer done. Close the data connection.";
+    return 225;
 }

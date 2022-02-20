@@ -19,6 +19,7 @@ enum FtpCmd {
     kFcPWD  = 5,
     kFcLIST = 6,
     kFcCWD  = 7,
+    kFcRETR = 8,
 };
 
 
@@ -32,9 +33,14 @@ public:
     virtual int OnRequest(const FtpRequest::Ptr req,
                           FtpResponse::Ptr rsp){ return -1; }
 
+    bool CreateDataSession();
+
+    void CloseDataSession();
+
 protected:
     FtpUserInfo::Ptr    user_info_      = nullptr;  // 用户信息
     FtpSession::Ptr     cmd_session     = nullptr;  // 命令通道
+    FtpSession::Ptr     data_session    = nullptr;  // 客户端会话(数据通道)
 };
 
 class FtpTransactionManager {
@@ -106,3 +112,4 @@ DEFINE_TRANSACTION(PORT);
 DEFINE_TRANSACTION(PWD);
 DEFINE_TRANSACTION(LIST);
 DEFINE_TRANSACTION(CWD);
+DEFINE_TRANSACTION(RETR);
