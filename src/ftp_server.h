@@ -9,14 +9,6 @@
 #include <xco/tcp_server.h>
 #include "common.h"
 
-class FtpServerConfig {
-private:
-    std::string root_dir;
-public:
-    FUNCTION_BUILDER_VAR(RootDir, root_dir);
-};
-#define FtpServerConfigSgt Singleton<FtpServerConfig>::Instance()
-
 class FtpServer : public xco::TcpServer {
 public:
     DEFINE_PTR_CREATER(FtpServer);

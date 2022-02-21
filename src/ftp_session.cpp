@@ -5,10 +5,11 @@
       	创建日期：2022/2/19
  *================================================================*/
 #include "ftp_session.h"
+#include "ftp_server_config.h"
 
 FtpSession::FtpSession(xco::Socket::Ptr client) : xco::SocketStream(client) { }
 
-FtpRequest::Ptr FtpSession::GetRequest() {
+FtpRequest::Ptr FtpSession::GetRequest(bool& is_close) {
     // char* buffer = req->buffer;
     char buffer[MAX_FTP_REQUEST_BUFFER_LEN];
     size_t buffer_len = MAX_FTP_REQUEST_BUFFER_LEN;
@@ -24,7 +25,11 @@ FtpRequest::Ptr FtpSession::GetRequest() {
     bool is_finish = false;
     while(read_off < buffer_len) {
         int len = Read(buffer, buffer_len - read_off);
-        if (len <= 0) {
+        if (len == 0) {
+            is_close = true;
+            return nullptr;
+        }
+        if (len < 0) {
             return nullptr;
         }
         read_off += len;
@@ -83,7 +88,6 @@ FtpRequest::Ptr FtpSession::GetRequest() {
         msg = std::string (buffer, msg_off, msg_len);
     }
     auto req = FtpRequest::Create(cmd, msg);
-    LOGDEBUG(XCO_EXP_VARS(req->ToString()));
     return req;
 }
 
@@ -101,4 +105,35 @@ int FtpSession::SendData(const std::string &data) {
         return -1;
     }
     return Write(&data[0], data.size());
+}
+
+void FtpSession::SetCurDir(const std::string& path) {
+    auto root_dir = FtpServerConfigSgt.GetRootDir();
+    // 设置路径
+    std::string new_dir;
+    if (path.front() == '/') {
+        new_dir = path;
+    } else {
+        new_dir += cur_dir + "/" + path;
+    }
+
+    LOGDEBUG(XCO_EXP_VARS(root_dir, new_dir));
+    // 解析新路径
+    new_dir = GetAbsPath(root_dir + new_dir);
+    LOGDEBUG(XCO_EXP_VARS(root_dir, new_dir));
+    auto pos = new_dir.find(root_dir);
+    if (pos != 0) {
+        new_dir = "/";
+    }else {
+        new_dir = new_dir.substr(root_dir.size(), new_dir.size() - root_dir.size());
+    }
+
+    cur_dir = new_dir;
+}
+
+std::string FtpSession::GetCurDir() {
+    if (cur_dir.empty()) {
+        return "/";
+    }
+    return cur_dir;
 }

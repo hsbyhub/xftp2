@@ -7,7 +7,7 @@
 
 #include <iostream>
 #include <ftp_server.h>
-#include <xco/common.h>
+#include <ftp_server_config.h>
 
 // 根路径
 std::string root_dir;
@@ -57,12 +57,9 @@ int main(int argc, char** argv) {
         exit(-1);
     }
 
-    // 调整路径
-    root_dir = std::string(argv[1]);
-    if (!AdjustPath(root_dir)) {
-        LOGFATAL("Invalid root path");
-        exit(-1);
-    }
+    // 设置路径
+    root_dir = GetAbsPath(argv[1]);
+    ASSERT_MSG(!root_dir.empty(), "Bad path");
 
     // 启动
     Run();

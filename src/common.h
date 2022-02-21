@@ -9,6 +9,7 @@
 #include <string>
 #include <boost/lexical_cast.hpp>
 #include <list>
+#include <assert.h>
 
 #define DEFINE_PTR_CREATER(type)                                    \
             typedef std::shared_ptr<type> Ptr;                      \
@@ -50,6 +51,17 @@ void SetLogLevel(int level);
 #define LOGFATAL(msg)   LOG_IF_LEVEL(FATAL, msg)
 
 /**
- * @brief 调整路径
+ * @brief 断言
  */
-bool AdjustPath(std::string& path);
+#define ASSERT_MSG(cond, msg) \
+            if (!(cond)){       \
+                LOGFATAL(msg); \
+                assert((cond)); \
+            }
+
+/**
+ * @brief 获取绝对路径名
+ * @retval path
+ * @retval [empty string] bad path
+ */
+std::string GetAbsPath(const std::string& path);

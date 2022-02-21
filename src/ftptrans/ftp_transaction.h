@@ -17,9 +17,11 @@ enum FtpCmd {
     kFcPORT = 3,
     kFcSYST = 4,
     kFcPWD  = 5,
-    kFcLIST = 6,
-    kFcCWD  = 7,
-    kFcRETR = 8,
+    kFcCWD  = 6,
+    kFcCDUP = 7,
+    kFcLIST = 8,
+    kFcRETR = 9,
+    kFcSTOR = 10,
 };
 
 
@@ -33,14 +35,19 @@ public:
     virtual int OnRequest(const FtpRequest::Ptr req,
                           FtpResponse::Ptr rsp){ return -1; }
 
-    bool CreateDataSession();
-
-    void CloseDataSession();
-
 protected:
     FtpUserInfo::Ptr    user_info_      = nullptr;  // 用户信息
     FtpSession::Ptr     cmd_session     = nullptr;  // 命令通道
-    FtpSession::Ptr     data_session    = nullptr;  // 客户端会话(数据通道)
+};
+
+class BaseDataSocketFtpTransaction: public BaseFtpTransaction {
+protected:
+    bool CreateDataSocket();
+
+    void CloseDataSocket();
+
+protected:
+    xco::Socket::Ptr    data_socket     = nullptr;  // 数据通道
 };
 
 class FtpTransactionManager {
@@ -110,6 +117,27 @@ DEFINE_TRANSACTION(PASS);
 DEFINE_TRANSACTION(SYST);
 DEFINE_TRANSACTION(PORT);
 DEFINE_TRANSACTION(PWD);
-DEFINE_TRANSACTION(LIST);
 DEFINE_TRANSACTION(CWD);
-DEFINE_TRANSACTION(RETR);
+DEFINE_TRANSACTION(CDUP);
+
+class FtpTransactionLIST : public BaseDataSocketFtpTransaction{
+public:
+    DEFINE_PTR_CREATER(FtpTransactionLIST);
+
+public:
+    int OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) override;
+};
+REGISTER_TRANSACTION(LIST);
+
+class FtpTransactionRETR : public BaseDataSocketFtpTransaction{
+public:
+    DEFINE_PTR_CREATER(FtpTransactionRETR);
+
+public:
+    int OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) override;
+};
+REGISTER_TRANSACTION(RETR);
+
+//DEFINE_TRANSACTION(LIST);
+//DEFINE_TRANSACTION(RETR);
+DEFINE_TRANSACTION(STOR);

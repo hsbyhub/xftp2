@@ -49,15 +49,29 @@ struct FtpResponse : public BaseDump {
     int state_code  = 0;
     std::string msg;
 };
-
+class FtpTransactionLIST;
+class FtpTransactionRETR;
 class FtpSession : public xco::SocketStream {
+    friend FtpTransactionLIST;
+    friend FtpTransactionRETR;
 public:
     DEFINE_PTR_CREATER(FtpSession)
 
 protected:
     FtpSession(xco::Socket::Ptr client);
 public:
-    FtpRequest::Ptr GetRequest();
+    FtpRequest::Ptr GetRequest(bool& is_close);
     int SendResponse(FtpResponse::Ptr rsp);
     int SendData(const std::string& data);
+
+    void SetCurDir(const std::string& path);
+    std::string GetCurDir();
+
+
+private:
+    std::string             cur_dir;                       // 当前目录
+    xco::Ipv4Address::Ptr   port_addr          = nullptr;  // 客户端地址(建立数据通道)
+
+public:
+    FUNCTION_BUILDER_VAR(PortAddr, port_addr);
 };

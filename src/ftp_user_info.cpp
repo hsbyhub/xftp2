@@ -7,6 +7,7 @@
 
 #include "ftp_user_info.h"
 
+
 void FtpUserInfoManager::Update() {
 
 }

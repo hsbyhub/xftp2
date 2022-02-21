@@ -6,38 +6,36 @@
  *================================================================*/
 
 #include "ftp_transaction.h"
-#include <memory>
 #include <fstream>
+#include "ftp_server_config.h"
 
 const int g_buffer_size = 10 * 1024 * 1024;
 char g_buffer[g_buffer_size] = {0};
 
-bool BaseFtpTransaction::CreateDataSession() {
+bool BaseDataSocketFtpTransaction::CreateDataSocket() {
     // 关闭旧会话
-    CloseDataSession();
+    CloseDataSocket();
 
     // 主动发起连接
-    auto socket = xco::Socket::CreateTCP();
-    if (!socket->Init()) {
-        socket->Close();
+    data_socket = xco::Socket::CreateTCP();
+    if (!data_socket->Init()) {
+        data_socket->Close();
+        data_socket = nullptr;
         return false;
     }
-    if (!socket->Connect(user_info_->port_addr)) {
-        socket->Close();
+    if (!data_socket->Connect(cmd_session->GetPortAddr())) {
+        data_socket->Close();
+        data_socket = nullptr;
         return false;
     }
-
-    // 建立会话
-    data_session = FtpSession::Create(socket);
 
     return true;
 }
-void BaseFtpTransaction::CloseDataSession() {
-    if (data_session) {
-        data_session->Close();
-        data_session = nullptr;
+void BaseDataSocketFtpTransaction::CloseDataSocket() {
+    if (data_socket) {
+        data_socket->Close();
+        data_socket = nullptr;
     }
-
 }
 
 FtpTransactionManager::~FtpTransactionManager() {
@@ -54,7 +52,7 @@ int FtpTransactionManager::HandleRequest(const FtpRequest::Ptr req,
                                          FtpUserInfo::Ptr user_info) {
     auto rsp = FtpResponse::Create();
     int cmd = GetCmdFromStr(req->cmd);
-    if (cmd == FtpCmd::kFcNull) {
+    if (cmd == 0) {
         rsp->state_code = 202;
         rsp->msg = "Invalid commanad";
         session->SendResponse(rsp);
@@ -71,10 +69,10 @@ int FtpTransactionManager::HandleRequest(const FtpRequest::Ptr req,
     auto trans = it->second->Create();
     trans->user_info_ = user_info;
     trans->cmd_session = session;
-    int state = trans->OnRequest(req, rsp);
 
-    // 关闭数据通道
-    trans->CloseDataSession();
+    LOGDEBUG(XCO_EXP_VARS(session->GetCurDir()));
+
+    int state = trans->OnRequest(req, rsp);
 
     if (state != -1) {
         rsp->state_code = state;
@@ -202,7 +200,7 @@ int FtpTransactionPORT::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     if (!addr) {
         return 504;
     }
-    user_info_->port_addr = addr;
+    cmd_session->SetPortAddr(addr);
 
     rsp->msg = "PORT command successful. Consider using PASV.";
     return 200;
@@ -219,58 +217,8 @@ int FtpTransactionPWD::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp
         return 530;
     }
 
-    // 设置目录
-    user_info_->SetCurDir(req->msg);
-
-    rsp->msg = "\"" + user_info_->cur_dir + "\" is current diretory";
+    rsp->msg = "\"" + cmd_session->GetCurDir() + "\" is current diretory.";
     return 257;
-}
-
-int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
-    if (!user_info_) {
-        return -1;
-    }
-
-    // 检查状态
-    if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
-        rsp->msg = "No login.";
-        return 530;
-    }
-
-    // 主动连接数据通道
-    if (!CreateDataSession()) {
-        rsp->msg = "Create data connect fail.";
-        return 425;
-    }
-
-    // 通知客户端连接正常
-    if (!cmd_session) {
-        return -1;
-    }
-    cmd_session->SendData("150 Connect success. Here comes the list data. \r\n");
-
-    // 开始发送数据
-    std::string data = "";
-    std::string cmd = "ls -l " + user_info_->root_dir + user_info_->cur_dir;
-    FILE *file = popen(cmd.c_str(), "r");
-    if (!file) {
-        rsp->msg = "Open diretory fail.";
-        return 550;
-    }
-    while (true) {
-        int len = fread(g_buffer, 1, sizeof(g_buffer), file);
-        if (len <= 0){
-            break;
-        }
-        int ret = data_session->Write(g_buffer, len);
-        if (ret <= 0) {
-            break;
-        }
-    }
-    pclose(file);
-
-    rsp->msg = "Transfer done. Close the data connection.";
-    return 226;
 }
 
 int FtpTransactionCWD::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
@@ -285,10 +233,75 @@ int FtpTransactionCWD::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp
     }
 
     // 设置路径
-    user_info_->SetCurDir(user_info_->cur_dir + req->msg);
+    cmd_session->SetCurDir(req->msg);
 
-    rsp->msg = "Change diretory success. \"" + user_info_->cur_dir + "\" is current diretory.";
-    return 257;
+    rsp->msg = "\"" + cmd_session->GetCurDir() + "\" is current diretory.";
+    return 250;
+}
+
+int FtpTransactionCDUP::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
+    if (!user_info_) {
+        return -1;
+    }
+
+    // 检查状态
+    if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
+        rsp->msg = "No login.";
+        return 530;
+    }
+
+    // 设置路径
+    cmd_session->SetCurDir("..");
+
+    rsp->msg = "\"" + cmd_session->GetCurDir() + "\" is current diretory.";
+    return 250;
+}
+
+int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
+    if (!user_info_) {
+        return -1;
+    }
+
+    // 检查状态
+    if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
+        rsp->msg = "No login.";
+        return 530;
+    }
+
+    // 主动连接数据通道
+    if (!CreateDataSocket()) {
+        rsp->msg = "Create data connect fail.";
+        return 425;
+    }
+
+    // 通知客户端连接正常
+    if (!cmd_session) {
+        return -1;
+    }
+    cmd_session->SendData("150 Connect success. Here comes the list data. \r\n");
+
+    // 开始发送数据
+    std::string data = "";
+    std::string cmd = "ls -l " + FtpServerConfigSgt.GetRootDir() + cmd_session->cur_dir;
+    FILE *file = popen(cmd.c_str(), "r");
+    if (!file) {
+        rsp->msg = "Open diretory fail.";
+        return 550;
+    }
+    while (true) {
+        int len = fread(g_buffer, 1, sizeof(g_buffer), file);
+        if (len <= 0){
+            break;
+        }
+        int ret = data_socket->Send(g_buffer, len, 0);
+        if (ret <= 0) {
+            break;
+        }
+    }
+    pclose(file);
+
+    rsp->msg = "Transfer done. Close the data connection.";
+    return 226;
 }
 
 int FtpTransactionRETR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
@@ -303,7 +316,7 @@ int FtpTransactionRETR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     }
 
     // 主动连接数据通道
-    if (!CreateDataSession()) {
+    if (!CreateDataSocket()) {
         rsp->msg = "Create data connect fail.";
         return 425;
     }
@@ -315,12 +328,7 @@ int FtpTransactionRETR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     cmd_session->SendData("150 Connect success. Here comes the list data. \r\n");
 
     // 打开文件，开始传输
-    auto file_path = req->msg;
-    AdjustPath(file_path);
-    std::string path = user_info_->root_dir + user_info_->cur_dir + file_path;
-    if (path.back() == '/') {
-        path.pop_back();
-    }
+    std::string path = FtpServerConfigSgt.GetRootDir() + cmd_session->cur_dir + "/" + req->msg;
     auto file = fopen(path.c_str(), "rb");
     if (!file) {
         rsp->msg = "Open file fail.";
@@ -337,12 +345,27 @@ int FtpTransactionRETR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
             break;
         }
         for (int write_len = 0; write_len < len; ) {
-            int ret = data_session->Write(g_buffer, len - write_len);
+            int ret = data_socket->Send(g_buffer, len - write_len, 0);
             if (ret <= 0) {
                 return 426;
             }
             write_len += ret;
         }
+    }
+
+    rsp->msg = "Transfer done. Close the data connection.";
+    return 226;
+}
+
+int FtpTransactionSTOR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
+    if (!user_info_) {
+        return -1;
+    }
+
+    // 检查状态
+    if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
+        rsp->msg = "No login.";
+        return 530;
     }
 
     rsp->msg = "Transfer done. Close the data connection.";

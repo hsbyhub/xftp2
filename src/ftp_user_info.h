@@ -22,27 +22,12 @@ enum FtpUserState {
 
 class FtpUserInfoManager;
 struct FtpUserInfo : public BaseDump {
-
-    bool SetCurDir(std::string d) {
-        if (AdjustPath(d)) {
-            cur_dir = d;
-        }else {
-            cur_dir = "";
-            return false;
-        }
-
-        return true;
-    }
-
-
     DEFINE_PTR_CREATER(FtpUserInfo);
+
     std::string         name;                               // 名字
     std::string         pass                    = "123";    // 密码
-    std::string         root_dir                = FtpServerConfigSgt.GetRootDir();// 根目录
-    std::string         cur_dir;                            // 当前目录
     int                 state                   = 0;        // 状态
     int64_t             last_active_time_sec    = 0;        // 上一次活跃时间(用于内存淘汰)
-    xco::Ipv4Address::Ptr    port_addr          = nullptr;  // 客户端地址(建立数据通道)
 };
 
 class FtpUserInfoManager {
