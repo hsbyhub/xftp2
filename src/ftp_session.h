@@ -69,7 +69,7 @@ public:
 protected:
     FtpSession(xco::Socket::Ptr client);
 public:
-    FtpRequest::Ptr GetRequest(bool& is_close);
+    FtpRequest::Ptr GetRequest();
     int SendResponse(FtpResponse::Ptr rsp);
     int SendData(const std::string& data);
 

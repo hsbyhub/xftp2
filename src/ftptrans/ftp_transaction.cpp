@@ -75,7 +75,9 @@ int FtpTransactionManager::HandleRequest(const FtpRequest::Ptr req,
 
     int state = trans->OnRequest(req, rsp);
 
-    if (state != -1) {
+    if (state == -1) {
+        session->SendData("221 Goodbye.\r\n");
+    }else {
         rsp->state_code = state;
         session->SendResponse(rsp);
     }
@@ -145,7 +147,7 @@ int FtpTransactionPASS::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     // 设置登录
     session_->SetState(kFusLogin);
 
-    rsp->msg = "Login successful";
+    rsp->msg = "Login successful.";
     return 230;
 }
 
@@ -157,7 +159,7 @@ int FtpTransactionSYST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 int FtpTransactionPORT::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
     // 检查状态
     if (session_->GetState() != kFusLogin) {
-        rsp->msg = "No login";
+        rsp->msg = "No login.";
         return 530;
     }
 
@@ -190,7 +192,7 @@ int FtpTransactionPORT::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 int FtpTransactionPWD::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
     // 检查状态
     if (session_->GetState() != kFusLogin) {
-        rsp->msg = "No login";
+        rsp->msg = "No login.";
         return 530;
     }
 
@@ -215,7 +217,7 @@ int FtpTransactionCWD::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp
 int FtpTransactionCDUP::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
     // 检查状态
     if (session_->GetState() != kFusLogin) {
-        rsp->msg = "No login";
+        rsp->msg = "No login.";
         return 530;
     }
 
@@ -229,7 +231,7 @@ int FtpTransactionCDUP::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
     // 检查状态
     if (session_->GetState() != kFusLogin) {
-        rsp->msg = "No login";
+        rsp->msg = "No login.";
         return 530;
     }
 
@@ -272,7 +274,7 @@ int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 int FtpTransactionRETR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
     // 检查状态
     if (session_->GetState() != kFusLogin) {
-        rsp->msg = "No login";
+        rsp->msg = "No login.";
         return 530;
     }
 
@@ -324,7 +326,7 @@ int FtpTransactionRETR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 int FtpTransactionSTOR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
     // 检查状态
     if (session_->GetState() != kFusLogin) {
-        rsp->msg = "No login";
+        rsp->msg = "No login.";
         return 530;
     }
 
@@ -382,4 +384,9 @@ int FtpTransactionSTOR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 
     rsp->msg = "Transfer done. Close the data connection.";
     return 226;
+}
+
+int FtpTransactionQUIT::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
+    rsp->msg = "Goodbye.";
+    return 221;
 }

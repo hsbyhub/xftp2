@@ -24,6 +24,7 @@ enum FtpCmd {
     kFcLIST = 8,
     kFcRETR = 9,
     kFcSTOR = 10,
+    kFcQUIT = 11,
 };
 
 
@@ -121,6 +122,7 @@ DEFINE_TRANSACTION(PORT);
 DEFINE_TRANSACTION(PWD);
 DEFINE_TRANSACTION(CWD);
 DEFINE_TRANSACTION(CDUP);
+DEFINE_TRANSACTION(QUIT);
 
 class FtpTransactionLIST : public BaseDataSocketFtpTransaction{
 public:

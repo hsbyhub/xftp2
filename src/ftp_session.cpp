@@ -9,7 +9,7 @@
 
 FtpSession::FtpSession(xco::Socket::Ptr client) : xco::SocketStream(client) { }
 
-FtpRequest::Ptr FtpSession::GetRequest(bool& is_close) {
+FtpRequest::Ptr FtpSession::GetRequest() {
     // char* buffer = req->buffer;
     char buffer[MAX_FTP_REQUEST_BUFFER_LEN];
     size_t buffer_len = MAX_FTP_REQUEST_BUFFER_LEN;
@@ -26,7 +26,7 @@ FtpRequest::Ptr FtpSession::GetRequest(bool& is_close) {
     while(read_off < buffer_len) {
         int len = Read(buffer, buffer_len - read_off);
         if (len == 0) {
-            is_close = true;
+            Close();
             return nullptr;
         }
         if (len < 0) {

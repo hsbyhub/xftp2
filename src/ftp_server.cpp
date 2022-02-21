@@ -19,12 +19,10 @@ void FtpServer::ClientHandle(xco::Socket::Ptr client) {
     // 创建会话
     auto ftp_session = FtpSession::Create(client);
     client->Send("220 (xFTPd 1.0.1)\r\n");
-    while(true) {
-        bool is_close = false;
-        auto req = ftp_session->GetRequest(is_close);
-        if (is_close) {
-            break;
-        }
+
+    // 开始会话
+    while(ftp_session->IsConnected()) {
+        auto req = ftp_session->GetRequest();
         if (!req) {
             continue;
         }
