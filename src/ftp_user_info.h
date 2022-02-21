@@ -26,8 +26,6 @@ struct FtpUserInfo : public BaseDump {
 
     std::string         name;                               // 名字
     std::string         pass                    = "123";    // 密码
-    int                 state                   = 0;        // 状态
-    int64_t             last_active_time_sec    = 0;        // 上一次活跃时间(用于内存淘汰)
 };
 
 class FtpUserInfoManager {

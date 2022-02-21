@@ -6,3 +6,54 @@
  *================================================================*/
 
 #include "ftp_server_config.h"
+#include <fstream>
+
+template<typename T>
+const T BaseConfigLoader::Element::GetAs(const std::string &key) const {
+    auto it = data.find(key);
+    if (it == data.end()) {
+        return T();
+    }
+    try {
+        return boost::lexical_cast<T>(it->second);
+    } catch (...) {
+    }
+    return T();
+}
+
+bool BaseConfigLoader::Load(const std::string &file_name) {
+    auto file_path = FtpServerConfigSgt.GetConfigDir() + "/" + file_name;
+    std::ifstream ifs(file_path);
+    if (!ifs) {
+        return false;
+    }
+
+    for (std::string line;std::getline(ifs, line);) {
+        Element element;
+        std::vector<std::string> pair_strs;
+        StringSplitToVectorAs(line, '|', pair_strs);
+        for (auto pair_str : pair_strs) {
+            std::vector<std::string> pair;
+            StringSplitToVectorAs(pair_str, '|', pair);
+            if (pair.size() != 2) {
+                continue;
+            }
+            element.data[pair[0]] = pair[1];
+        }
+        OnReadElement(element);
+    }
+}
+
+bool FtpUsersConfig::OnClear() {
+    user_to_item_.clear();
+}
+
+bool FtpUsersConfig::OnReadElement(const BaseConfigLoader::Element &element) {
+    auto item = Item::Create();
+    item->name = element.GetAs<std::string>("name");
+    item->pass = element.GetAs<std::string>("pass");
+}
+
+const FtpUsersConfig::Item::Ptr FtpUsersConfig::GetItem(const std::string& name) const {
+    return GetFromMap(user_to_item_, name);
+}

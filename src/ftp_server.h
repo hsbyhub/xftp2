@@ -9,6 +9,8 @@
 #include <xco/tcp_server.h>
 #include "common.h"
 
+bool LoadAllConfig();
+
 class FtpServer : public xco::TcpServer {
 public:
     DEFINE_PTR_CREATER(FtpServer);

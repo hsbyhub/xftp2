@@ -23,7 +23,9 @@ bool StringSplitToVectorAs(const std::string& str, char s, std::vector<T>& vec) 
     size_t pre = 0;
     for (size_t i = 0; i <= str.size(); ++i) {
         if (i == str.size() || str[i] == s) {
-            vec.push_back(boost::lexical_cast<T>(&str[pre], i - pre));
+            try {
+                vec.push_back(boost::lexical_cast<T>(&str[pre], i - pre));
+            } catch (...) {}
             pre = i + 1;
         }
     }

@@ -42,7 +42,6 @@ void FtpServer::ClientHandle(xco::Socket::Ptr client) {
     }
 
     // 关闭会话
-    user_info->state = kFusLogout;
     LOGDEBUG("close connect, " << XCO_EXP_VARS(client->ToString()));
     ftp_session->Close();
 }

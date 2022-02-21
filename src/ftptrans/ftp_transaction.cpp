@@ -48,8 +48,7 @@ FtpTransactionManager::~FtpTransactionManager() {
 }
 
 int FtpTransactionManager::HandleRequest(const FtpRequest::Ptr req,
-                                         FtpSession::Ptr session,
-                                         FtpUserInfo::Ptr user_info) {
+                                         FtpSession::Ptr session) {
     auto rsp = FtpResponse::Create();
     int cmd = GetCmdFromStr(req->cmd);
     if (cmd == 0) {
@@ -67,7 +66,6 @@ int FtpTransactionManager::HandleRequest(const FtpRequest::Ptr req,
     }
 
     auto trans = it->second->Create();
-    trans->user_info_ = user_info;
     trans->cmd_session = session;
 
     LOGDEBUG(XCO_EXP_VARS(session->GetCurDir()));
@@ -102,17 +100,13 @@ int FtpTransactionManager::GetCmdFromStr(const std::string& cmd_str) {
 
 
 int FtpTransactionUSER::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
-    if (!user_info_) {
-        return -1;
-    }
-
     // 匿名登录
     const char* req_name = req->msg.c_str();
     if (req->msg.empty()
         || strcasecmp(req_name, "ftp") == 0
         || strcasecmp(req_name, "anonymous") == 0) {
         user_info_->name = "";
-        user_info_->state = kFusAnonymousLogin;
+        cmd_session->SetState(kFusAnonymousLogin);
         rsp->msg = "Anonymous login successful.";
         return 230;
     }
@@ -124,12 +118,12 @@ int FtpTransactionUSER::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 
     // 验证用户名
     if (user_info_->name != req->msg){
-        user_info_->state = kFusLogout;
+        cmd_session->SetState(kFusLogout);
         rsp->msg = "Invalid user";
         return 221;
     }
 
-    user_info_->state = kFusNeedPass;
+    cmd_session->SetState(kFusNeedPass);
     rsp->msg = "Valid user, need password.";
     return 331;
 }
@@ -142,7 +136,7 @@ int FtpTransactionPASS::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     LOGDEBUG("On FtpTransactionPASS::OnRequest");
 
     // 验证用户状态
-    if (user_info_->state != kFusNeedPass) {
+    if (cmd_session->GetState() != kFusNeedPass) {
         rsp->msg = "Invalid user";
         return 221;
     }
@@ -154,28 +148,20 @@ int FtpTransactionPASS::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     }
 
     // 设置登录
-    user_info_->state = kFusLogin;
+    cmd_session->SetState(kFusLogin);
 
     rsp->msg = "Login successful";
     return 230;
 }
 
 int FtpTransactionSYST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
-    if (!user_info_) {
-        return -1;
-    }
-
     rsp->msg = "Linux";
     return 211;
 }
 
 int FtpTransactionPORT::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
-    if (!user_info_) {
-        return -1;
-    }
-
     // 检查状态
-    if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
+    if (cmd_session->GetState() != kFusLogin && cmd_session->GetState() != kFusAnonymousLogin) {
         rsp->msg = "No login";
         return 530;
     }
@@ -207,12 +193,8 @@ int FtpTransactionPORT::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 }
 
 int FtpTransactionPWD::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
-    if (!user_info_) {
-        return -1;
-    }
-
     // 检查状态
-    if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
+    if (cmd_session->GetState() != kFusLogin && cmd_session->GetState() != kFusAnonymousLogin) {
         rsp->msg = "No login";
         return 530;
     }
@@ -222,12 +204,8 @@ int FtpTransactionPWD::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp
 }
 
 int FtpTransactionCWD::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
-    if (!user_info_) {
-        return -1;
-    }
-
     // 检查状态
-    if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
+    if (cmd_session->GetState() != kFusLogin && cmd_session->GetState() != kFusAnonymousLogin) {
         rsp->msg = "No login";
         return 530;
     }
@@ -240,13 +218,9 @@ int FtpTransactionCWD::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp
 }
 
 int FtpTransactionCDUP::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
-    if (!user_info_) {
-        return -1;
-    }
-
     // 检查状态
-    if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
-        rsp->msg = "No login.";
+    if (cmd_session->GetState() != kFusLogin && cmd_session->GetState() != kFusAnonymousLogin) {
+        rsp->msg = "No login";
         return 530;
     }
 
@@ -258,13 +232,9 @@ int FtpTransactionCDUP::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 }
 
 int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
-    if (!user_info_) {
-        return -1;
-    }
-
     // 检查状态
-    if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
-        rsp->msg = "No login.";
+    if (cmd_session->GetState() != kFusLogin && cmd_session->GetState() != kFusAnonymousLogin) {
+        rsp->msg = "No login";
         return 530;
     }
 
@@ -305,13 +275,9 @@ int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 }
 
 int FtpTransactionRETR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
-    if (!user_info_) {
-        return -1;
-    }
-
     // 检查状态
-    if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
-        rsp->msg = "No login.";
+    if (cmd_session->GetState() != kFusLogin && cmd_session->GetState() != kFusAnonymousLogin) {
+        rsp->msg = "No login";
         return 530;
     }
 
@@ -358,13 +324,9 @@ int FtpTransactionRETR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 }
 
 int FtpTransactionSTOR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
-    if (!user_info_) {
-        return -1;
-    }
-
     // 检查状态
-    if (user_info_->state != kFusLogin && user_info_->state != kFusAnonymousLogin) {
-        rsp->msg = "No login.";
+    if (cmd_session->GetState() != kFusLogin && cmd_session->GetState() != kFusAnonymousLogin) {
+        rsp->msg = "No login";
         return 530;
     }
 

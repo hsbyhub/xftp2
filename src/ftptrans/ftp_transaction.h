@@ -36,7 +36,6 @@ public:
                           FtpResponse::Ptr rsp){ return -1; }
 
 protected:
-    FtpUserInfo::Ptr    user_info_      = nullptr;  // 用户信息
     FtpSession::Ptr     cmd_session     = nullptr;  // 命令通道
 };
 
@@ -65,8 +64,7 @@ public:
     ~FtpTransactionManager();
 public:
     int HandleRequest(const FtpRequest::Ptr req,
-                      FtpSession::Ptr session,
-                      FtpUserInfo::Ptr user_info);
+                      FtpSession::Ptr session);
 
     template<typename TransType>
     bool RegisterTransaction(int cmd) {
@@ -137,7 +135,4 @@ public:
     int OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) override;
 };
 REGISTER_TRANSACTION(RETR);
-
-//DEFINE_TRANSACTION(LIST);
-//DEFINE_TRANSACTION(RETR);
 DEFINE_TRANSACTION(STOR);

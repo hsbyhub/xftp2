@@ -67,11 +67,12 @@ public:
     void SetCurDir(const std::string& path);
     std::string GetCurDir();
 
-
 private:
-    std::string             cur_dir;                       // 当前目录
-    xco::Ipv4Address::Ptr   port_addr          = nullptr;  // 客户端地址(建立数据通道)
+    std::string             cur_dir;                        // 当前目录
+    int                     state              = 0;         // 状态
+    xco::Ipv4Address::Ptr   port_addr          = nullptr;   // 客户端地址(建立数据通道)
 
 public:
     FUNCTION_BUILDER_VAR(PortAddr, port_addr);
+    FUNCTION_BUILDER_VAR(State, state);
 };
