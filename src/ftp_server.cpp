@@ -8,19 +8,11 @@
 #include "ftp_session.h"
 #include "ftptrans/ftp_transaction.h"
 
+bool LoadAllConfig() {
+
+}
+
 void FtpServer::ClientHandle(xco::Socket::Ptr client) {
-
-    // 加载用户数据
-    auto client_addr = client->GetRemoteAddress();
-    if (!client_addr) {
-        return;
-    }
-    auto sock_addr = (sockaddr_in*)client_addr->GetAddr();
-    auto user_info = FtpUserInfoManagerSgt.GetUserInfo(sock_addr->sin_addr.s_addr);
-    if (!user_info) {
-        return;
-    }
-
     // 创建会话
     auto ftp_session = FtpSession::Create(client);
     client->Send("220 (xFTPd 1.0.1)\r\n");
@@ -35,7 +27,7 @@ void FtpServer::ClientHandle(xco::Socket::Ptr client) {
         }
         LOGDEBUG(XCO_EXP_VARS(req->ToString()));
 
-        int state = FtpTransactionManagerSgt.HandleRequest(req, ftp_session, user_info);
+        int state = FtpTransactionManagerSgt.HandleRequest(req, ftp_session);
         if (state == -1 || state == 221) {
             break;
         }
@@ -44,4 +36,12 @@ void FtpServer::ClientHandle(xco::Socket::Ptr client) {
     // 关闭会话
     LOGDEBUG("close connect, " << XCO_EXP_VARS(client->ToString()));
     ftp_session->Close();
+}
+
+bool FtpServer::Init(xco::Socket::Ptr socket, xco::IoManager *io_manager, uint32_t client_handler_cnt) {
+    bool ret = LoadAllConfig();
+    if (!ret) {
+        return ret;
+    }
+    return TcpServer::Init(socket, io_manager, client_handler_cnt);
 }

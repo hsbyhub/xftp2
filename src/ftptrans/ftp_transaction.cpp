@@ -23,7 +23,7 @@ bool BaseDataSocketFtpTransaction::CreateDataSocket() {
         data_socket = nullptr;
         return false;
     }
-    if (!data_socket->Connect(cmd_session->GetPortAddr())) {
+    if (!data_socket->Connect(session_->GetPortAddr())) {
         data_socket->Close();
         data_socket = nullptr;
         return false;
@@ -66,7 +66,7 @@ int FtpTransactionManager::HandleRequest(const FtpRequest::Ptr req,
     }
 
     auto trans = it->second->Create();
-    trans->cmd_session = session;
+    trans->session_ = session;
 
     LOGDEBUG(XCO_EXP_VARS(session->GetCurDir()));
 
@@ -105,50 +105,46 @@ int FtpTransactionUSER::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     if (req->msg.empty()
         || strcasecmp(req_name, "ftp") == 0
         || strcasecmp(req_name, "anonymous") == 0) {
-        user_info_->name = "";
-        cmd_session->SetState(kFusAnonymousLogin);
+        session_->GetName() = "";
+        session_->SetState(kFusAnonymousLogin);
         rsp->msg = "Anonymous login successful.";
         return 230;
     }
 
-    // 是否为第一次登录, 设置用户名
-    if (user_info_->name.empty()){
-        user_info_->name = req->msg;
-    }
-
     // 验证用户名
-    if (user_info_->name != req->msg){
-        cmd_session->SetState(kFusLogout);
+    auto user = FtpUsersConfigSgt.GetItem(req->msg);
+    if (!user) {
         rsp->msg = "Invalid user";
-        return 221;
+        return -1;
     }
 
-    cmd_session->SetState(kFusNeedPass);
+    session_->SetName(user->name);
+    session_->SetState(kFusNeedPass);
     rsp->msg = "Valid user, need password.";
     return 331;
 }
 
 int FtpTransactionPASS::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
-    if (!user_info_) {
-        return -1;
-    }
-
-    LOGDEBUG("On FtpTransactionPASS::OnRequest");
-
     // 验证用户状态
-    if (cmd_session->GetState() != kFusNeedPass) {
+    if (session_->GetState() != kFusNeedPass) {
         rsp->msg = "Invalid user";
         return 221;
     }
 
     // 验证密码
-    if (user_info_->pass != req->msg) {
+    auto user = FtpUsersConfigSgt.GetItem(session_->GetName());
+    if (!user) {
+        rsp->msg = "Invalid user";
+        return -1;
+    }
+
+    if (user->pass != req->msg) {
         rsp->msg = "Invalid password";
-        return 221;
+        return -1;
     }
 
     // 设置登录
-    cmd_session->SetState(kFusLogin);
+    session_->SetState(kFusLogin);
 
     rsp->msg = "Login successful";
     return 230;
@@ -161,7 +157,7 @@ int FtpTransactionSYST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 
 int FtpTransactionPORT::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
     // 检查状态
-    if (cmd_session->GetState() != kFusLogin && cmd_session->GetState() != kFusAnonymousLogin) {
+    if (session_->GetState() != kFusLogin && session_->GetState() != kFusAnonymousLogin) {
         rsp->msg = "No login";
         return 530;
     }
@@ -186,7 +182,7 @@ int FtpTransactionPORT::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     if (!addr) {
         return 504;
     }
-    cmd_session->SetPortAddr(addr);
+    session_->SetPortAddr(addr);
 
     rsp->msg = "PORT command successful. Consider using PASV.";
     return 200;
@@ -194,46 +190,46 @@ int FtpTransactionPORT::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 
 int FtpTransactionPWD::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
     // 检查状态
-    if (cmd_session->GetState() != kFusLogin && cmd_session->GetState() != kFusAnonymousLogin) {
+    if (session_->GetState() != kFusLogin && session_->GetState() != kFusAnonymousLogin) {
         rsp->msg = "No login";
         return 530;
     }
 
-    rsp->msg = "\"" + cmd_session->GetCurDir() + "\" is current diretory.";
+    rsp->msg = "\"" + session_->GetCurDir() + "\" is current diretory.";
     return 257;
 }
 
 int FtpTransactionCWD::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
     // 检查状态
-    if (cmd_session->GetState() != kFusLogin && cmd_session->GetState() != kFusAnonymousLogin) {
+    if (session_->GetState() != kFusLogin && session_->GetState() != kFusAnonymousLogin) {
         rsp->msg = "No login";
         return 530;
     }
 
     // 设置路径
-    cmd_session->SetCurDir(req->msg);
+    session_->SetCurDir(req->msg);
 
-    rsp->msg = "\"" + cmd_session->GetCurDir() + "\" is current diretory.";
+    rsp->msg = "\"" + session_->GetCurDir() + "\" is current diretory.";
     return 250;
 }
 
 int FtpTransactionCDUP::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
     // 检查状态
-    if (cmd_session->GetState() != kFusLogin && cmd_session->GetState() != kFusAnonymousLogin) {
+    if (session_->GetState() != kFusLogin && session_->GetState() != kFusAnonymousLogin) {
         rsp->msg = "No login";
         return 530;
     }
 
     // 设置路径
-    cmd_session->SetCurDir("..");
+    session_->SetCurDir("..");
 
-    rsp->msg = "\"" + cmd_session->GetCurDir() + "\" is current diretory.";
+    rsp->msg = "\"" + session_->GetCurDir() + "\" is current diretory.";
     return 250;
 }
 
 int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
     // 检查状态
-    if (cmd_session->GetState() != kFusLogin && cmd_session->GetState() != kFusAnonymousLogin) {
+    if (session_->GetState() != kFusLogin && session_->GetState() != kFusAnonymousLogin) {
         rsp->msg = "No login";
         return 530;
     }
@@ -245,14 +241,14 @@ int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     }
 
     // 通知客户端连接正常
-    if (!cmd_session) {
+    if (!session_) {
         return -1;
     }
-    cmd_session->SendData("150 Connect success. Here comes the list data. \r\n");
+    session_->SendData("150 Connect success. Here comes the list data. \r\n");
 
     // 开始发送数据
     std::string data = "";
-    std::string cmd = "ls -l " + FtpServerConfigSgt.GetRootDir() + cmd_session->cur_dir;
+    std::string cmd = "ls -l " + FtpServerConfigSgt.GetRootDir() + session_->cur_dir;
     FILE *file = popen(cmd.c_str(), "r");
     if (!file) {
         rsp->msg = "Open diretory fail.";
@@ -276,7 +272,7 @@ int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 
 int FtpTransactionRETR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
     // 检查状态
-    if (cmd_session->GetState() != kFusLogin && cmd_session->GetState() != kFusAnonymousLogin) {
+    if (session_->GetState() != kFusLogin && session_->GetState() != kFusAnonymousLogin) {
         rsp->msg = "No login";
         return 530;
     }
@@ -288,13 +284,13 @@ int FtpTransactionRETR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     }
 
     // 通知客户端连接正常
-    if (!cmd_session) {
+    if (!session_) {
         return -1;
     }
-    cmd_session->SendData("150 Connect success. Here comes the list data. \r\n");
+    session_->SendData("150 Connect success. Here comes the list data. \r\n");
 
     // 打开文件，开始传输
-    std::string path = FtpServerConfigSgt.GetRootDir() + cmd_session->cur_dir + "/" + req->msg;
+    std::string path = FtpServerConfigSgt.GetRootDir() + session_->cur_dir + "/" + req->msg;
     auto file = fopen(path.c_str(), "rb");
     if (!file) {
         rsp->msg = "Open file fail.";
@@ -325,7 +321,7 @@ int FtpTransactionRETR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 
 int FtpTransactionSTOR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
     // 检查状态
-    if (cmd_session->GetState() != kFusLogin && cmd_session->GetState() != kFusAnonymousLogin) {
+    if (session_->GetState() != kFusLogin && session_->GetState() != kFusAnonymousLogin) {
         rsp->msg = "No login";
         return 530;
     }

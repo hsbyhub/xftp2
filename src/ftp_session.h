@@ -12,6 +12,13 @@
 const int MAX_FTP_REQUEST_BUFFER_LEN = 128;
 const int MAX_FTP_RESPONSE_BUFFER_LEN = 2 * 1024 * 1024;
 
+enum FtpSessionState {
+    kFusLogout              = 0,
+    kFusAnonymousLogin      = 1,
+    kFusNeedPass            = 2,
+    kFusLogin               = 3,
+};
+
 struct FtpRequest : public BaseDump{
     DEFINE_PTR_CREATER(FtpRequest);
 
@@ -68,11 +75,13 @@ public:
     std::string GetCurDir();
 
 private:
+    std::string             name;                           // 用户名
     std::string             cur_dir;                        // 当前目录
-    int                     state              = 0;         // 状态
-    xco::Ipv4Address::Ptr   port_addr          = nullptr;   // 客户端地址(建立数据通道)
+    int                     state               = 0;        // 状态
+    xco::Ipv4Address::Ptr   port_addr           = nullptr;  // 客户端地址(建立数据通道)
 
 public:
     FUNCTION_BUILDER_VAR(PortAddr, port_addr);
     FUNCTION_BUILDER_VAR(State, state);
+    FUNCTION_BUILDER_VAR(Name, name);
 };

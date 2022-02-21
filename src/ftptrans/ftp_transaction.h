@@ -6,7 +6,9 @@
  *================================================================*/
 #pragma once
 
-#include "ftp_user_info.h"
+#include "common.h"
+#include "ftp_session.h"
+#include <unordered_map>
 
 class FtpTransactionManager;
 
@@ -36,7 +38,7 @@ public:
                           FtpResponse::Ptr rsp){ return -1; }
 
 protected:
-    FtpSession::Ptr     cmd_session     = nullptr;  // 命令通道
+    FtpSession::Ptr     session_     = nullptr;  // 命令通道
 };
 
 class BaseDataSocketFtpTransaction: public BaseFtpTransaction {
