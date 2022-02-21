@@ -7,9 +7,12 @@
 #include "ftp_server.h"
 #include "ftp_session.h"
 #include "ftptrans/ftp_transaction.h"
+#include "ftp_server_config.h"
 
 bool LoadAllConfig() {
-
+    bool ret = true;
+    ret &= FtpUsersConfigSgt.Load("users.cfg");
+    return ret;
 }
 
 void FtpServer::ClientHandle(xco::Socket::Ptr client) {

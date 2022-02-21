@@ -33,18 +33,18 @@ public:
     }
 public:
     bool Load(const std::string& file_name);
-    virtual bool OnClear() {}
-    virtual bool OnReadElement(const Element& element) {}
+    virtual void OnClear() {}
+    virtual bool OnReadElement(const Element& element) {return true;}
 };
 
 class FtpUsersConfig : public BaseConfigLoader{
     struct Item {
         DEFINE_PTR_CREATER(Item);
-        std::string name;
-        std::string pass;
+        std::string name;       // 名字
+        std::string pass;       // 密码
     };
 public:
-    bool OnClear() override;
+    void OnClear() override;
 
     bool OnReadElement(const BaseConfigLoader::Element& element) override;
 

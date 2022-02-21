@@ -9,19 +9,10 @@
 #include <ftp_server.h>
 #include <ftp_server_config.h>
 
-// 根路径
 std::string root_dir;
+std::string config_dir;
 
 void OnStart() {
-
-    // 设置库日志等级
-    xco::SetLogLevel(5);
-
-    // 设置系统日志等级
-    // SetLogLevel(5);
-
-    // 设置根路径
-    FtpServerConfigSgt.SetRootDir(root_dir);
 
     // 初始化监听套接字
     auto listen_socket = xco::Socket::CreateTCP();
@@ -31,11 +22,22 @@ void OnStart() {
 
     // 初始化服务器
     auto ftp_server = FtpServer::Create();
-    ftp_server->Init(listen_socket);
+    if (!ftp_server->Init(listen_socket)) {
+        LOGFATAL("Ftp server init fail");
+        ftp_server->Stop();
+        return ;
+    }
 
     // 启动服务器
-    ftp_server->Start();
+    if (!ftp_server->Start()) {
+        LOGFATAL("Ftp server start fail");
+        ftp_server->Stop();
+        return ;
+    }
 
+    std::cout << "Ftp server start success." << std::endl;
+    std::cout << XCO_EXP_VARS(root_dir) << std::endl;
+    std::cout << XCO_EXP_VARS(config_dir) << std::endl;
 }
 
 void Run() {
@@ -52,14 +54,24 @@ void Run() {
 }
 
 int main(int argc, char** argv) {
-    if (argc != 2) {
-        LOGFATAL("Usage: ftp_server [root path]");
+    if (argc != 3) {
+        LOGFATAL("Usage: ftp_server [root diretory] [server config diretory]");
         exit(-1);
     }
 
-    // 设置路径
+    // 设置库日志等级
+    xco::SetLogLevel(5);
+
+    // 设置系统日志等级
+    // SetLogLevel(5);
+
+    // 初始化
     root_dir = GetAbsPath(argv[1]);
-    ASSERT_MSG(!root_dir.empty(), "Bad path");
+    config_dir= GetAbsPath(argv[2]);
+    ASSERT_MSG(!root_dir.empty(), "Bad root path");
+    ASSERT_MSG(!config_dir.empty(), "Bad config path");
+    FtpServerConfigSgt.SetRootDir(root_dir);
+    FtpServerConfigSgt.SetConfigDir(config_dir);
 
     // 启动
     Run();

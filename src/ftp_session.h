@@ -14,9 +14,8 @@ const int MAX_FTP_RESPONSE_BUFFER_LEN = 2 * 1024 * 1024;
 
 enum FtpSessionState {
     kFusLogout              = 0,
-    kFusAnonymousLogin      = 1,
-    kFusNeedPass            = 2,
-    kFusLogin               = 3,
+    kFusNeedPass            = 1,
+    kFusLogin               = 2,
 };
 
 struct FtpRequest : public BaseDump{
@@ -56,11 +55,14 @@ struct FtpResponse : public BaseDump {
     int state_code  = 0;
     std::string msg;
 };
+
 class FtpTransactionLIST;
 class FtpTransactionRETR;
+class FtpTransactionSTOR;
 class FtpSession : public xco::SocketStream {
     friend FtpTransactionLIST;
     friend FtpTransactionRETR;
+    friend FtpTransactionSTOR;
 public:
     DEFINE_PTR_CREATER(FtpSession)
 

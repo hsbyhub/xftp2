@@ -42,6 +42,8 @@ protected:
 };
 
 class BaseDataSocketFtpTransaction: public BaseFtpTransaction {
+public:
+    ~BaseDataSocketFtpTransaction();
 protected:
     bool CreateDataSocket();
 
@@ -137,4 +139,12 @@ public:
     int OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) override;
 };
 REGISTER_TRANSACTION(RETR);
-DEFINE_TRANSACTION(STOR);
+
+class FtpTransactionSTOR : public BaseDataSocketFtpTransaction{
+public:
+    DEFINE_PTR_CREATER(FtpTransactionSTOR);
+
+public:
+    int OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) override;
+};
+REGISTER_TRANSACTION(STOR);
