@@ -3,12 +3,16 @@ data_dir=${project_dir}/data
 build_dir=${project_dir}/build
 xftp_home=/usr/local/xftp
 
-echo "Into \"${build_dir}\" and build."
+echo "Build libxco"
+cd libxco
+./install.sh
+
+echo "Build xftp."
 rm -rf ${build_dir}
 mkdir build && cd build
 cd ${build_dir}
 cmake .. && make -j4
-echo "Build done."
+echo "Build xftp done."
 
 echo "Copy xftp server to \"${xftp_home}\""
 rm -rf ${xftp_home}
