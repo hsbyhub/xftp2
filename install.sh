@@ -5,6 +5,7 @@ xftp_home=/usr/local/xftp
 
 git clone https://gitee.com/hsby/libxco
 cd libxco
+chmod a+x install.sh
 ./install.sh
 
 echo "Build xftp."
