@@ -102,7 +102,7 @@ inline bool RegisterTransactionHelper(int cmd, const char* cmd_str) {
 #define REGISTER_TRANSACTION(cmd) \
             static bool ret_register_##cmd = RegisterTransactionHelper<FtpTransaction##cmd>(kFc##cmd, #cmd);
 
-// 声明FtpTransactionXXX
+// 声明BaseFtpTransactionXXX
 #define DEFINE_TRANSACTION(cmd)                             \
     class FtpTransaction##cmd : public BaseFtpTransaction { \
     public:                                                 \
@@ -112,7 +112,15 @@ inline bool RegisterTransactionHelper(int cmd, const char* cmd_str) {
     };                                                      \
     REGISTER_TRANSACTION(cmd);
 
-
+// 声明BaseDataSocketFtpTransactionXXX
+#define DEFINE_SOCKET_TRANSACTION(cmd)                             \
+    class FtpTransaction##cmd : public BaseDataSocketFtpTransaction{ \
+    public:                                                 \
+        DEFINE_PTR_CREATER(FtpTransaction##cmd);            \
+    public:                                                 \
+        int OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) override;\
+    };                                                      \
+    REGISTER_TRANSACTION(cmd);
 
 // 事务实现
 DEFINE_TRANSACTION(USER);
@@ -123,30 +131,6 @@ DEFINE_TRANSACTION(PWD);
 DEFINE_TRANSACTION(CWD);
 DEFINE_TRANSACTION(CDUP);
 DEFINE_TRANSACTION(QUIT);
-
-class FtpTransactionLIST : public BaseDataSocketFtpTransaction{
-public:
-    DEFINE_PTR_CREATER(FtpTransactionLIST);
-
-public:
-    int OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) override;
-};
-REGISTER_TRANSACTION(LIST);
-
-class FtpTransactionRETR : public BaseDataSocketFtpTransaction{
-public:
-    DEFINE_PTR_CREATER(FtpTransactionRETR);
-
-public:
-    int OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) override;
-};
-REGISTER_TRANSACTION(RETR);
-
-class FtpTransactionSTOR : public BaseDataSocketFtpTransaction{
-public:
-    DEFINE_PTR_CREATER(FtpTransactionSTOR);
-
-public:
-    int OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) override;
-};
-REGISTER_TRANSACTION(STOR);
+DEFINE_SOCKET_TRANSACTION(LIST);
+DEFINE_SOCKET_TRANSACTION(RETR);
+DEFINE_SOCKET_TRANSACTION(STOR);
