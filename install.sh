@@ -48,8 +48,8 @@ EchoGreen "Start xftp.service done."
 
 # Echo some tips
 echo ""
-EchoPurple "All xftp install is done."
-EchoPurple "This is some tips:"
+EchoPurple "All xftp install program is done."
+EchoPurple "Tips:"
 EchoPurple "-Default [Home]=\"${xftp_home}\""
 EchoPurple "-Default [Share Diretory]=\"${xftp_home}/root/\""
 EchoPurple "-Default [Config Diretory]=\"${xftp_home}/config/\""
