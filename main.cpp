@@ -33,7 +33,8 @@ void OnStartFtpServer() {
     }
 
     std::cout << "Ftp server start success." << std::endl;
-    std::cout << "root diretory=" << FtpServerConfigSgt.GetRootDir() << std::endl;
+    std::cout << "log_level=" << FtpServerConfigSgt.GetLogLevel() << std::endl;
+    std::cout << "root_diretory=" << FtpServerConfigSgt.GetRootDir() << std::endl;
 }
 
 void Run() {
