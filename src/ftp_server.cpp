@@ -6,7 +6,7 @@
  *================================================================*/
 #include "ftp_server.h"
 #include "ftp_session.h"
-#include "ftptrans/ftp_transaction.h"
+#include "ftp_transaction.h"
 #include "ftp_server_config.h"
 
 bool LoadAllConfig() {
