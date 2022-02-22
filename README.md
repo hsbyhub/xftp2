@@ -1,4 +1,4 @@
-# libxco
+# xftp2
 
 ---
 作者：谢森鑫(hsbymail@163.com)
