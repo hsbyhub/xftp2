@@ -36,7 +36,7 @@ EchoGreen "Install xftp done."
 
 # Install xftp.service
 cd ${project_dir}
-cp -f xftp/xftp.service /etc/systemd/system/
+cp -f xftp.service /etc/systemd/system/
 EchoGreen "Install xftp.service done."
 
 # Start xftp.service
