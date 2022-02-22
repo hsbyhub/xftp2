@@ -5,8 +5,8 @@ xftp_home=/usr/local/xftp
 
 echo "Into \"${build_dir}\" and build."
 rm -rf ${build_dir}
-cd ${build_dir}
 mkdir build && cd build
+cd ${build_dir}
 cmake .. && make -j4
 echo "Build done."
 
@@ -27,5 +27,6 @@ systemctl start xftp.service
 
 echo "xftp install and lauch done."
 echo "xftp home is \"${xftp_home}\""
+echo "xftp share diretory is \"${xftp_home}/root\""
 echo "Use \"systemctl\" to contral server, like \"systemctl status xftp.service\"."
 echo "Thank you."
