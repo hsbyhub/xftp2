@@ -6,7 +6,7 @@
 [Click to view english README](./README_en.md)
 
 ## 简介
-xftp2是一个高性能FTP服务器程序，用户使用xftp可以轻松快速搭建高性能FTP服务器，实现不同主机之间文件传输。
+xftp2是一个基于[libxco](https://gitee.com/hsby/libxco)的高性能FTP服务器程序，用户使用xftp可以轻松快速搭建高性能FTP服务器，实现不同主机之间文件传输。
 
 ## 安装
 ```
