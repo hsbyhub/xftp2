@@ -3,7 +3,7 @@ data_dir=${project_dir}/data
 build_dir=${project_dir}/build
 xftp_home=/usr/local/xftp
 
-echo "Build libxco"
+git clone https://gitee.com/hsby/libxco
 cd libxco
 ./install.sh
 
