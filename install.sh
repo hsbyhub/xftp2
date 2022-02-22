@@ -9,8 +9,8 @@ cd libxco
 
 echo "Build xftp."
 rm -rf ${build_dir}
+cd ${project_dir}
 mkdir build && cd build
-cd ${build_dir}
 cmake .. && make -j4
 echo "Build xftp done."
 
