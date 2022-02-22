@@ -76,6 +76,8 @@ public:
     void SetCurDir(const std::string& path);
     std::string GetCurDir();
 
+    std::string GetAbsFilePath(const std::string& file_name = "");
+
 private:
     std::string             name;                           // 用户名
     std::string             cur_dir;                        // 当前目录

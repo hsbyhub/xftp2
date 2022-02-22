@@ -54,13 +54,6 @@ int main(int argc, char** argv) {
         LOGFATAL("Usage: ftp_server [server config diretory]");
         return -1;
     }
-
-    // 设置库日志等级
-    xco::SetLogLevel(5);
-
-    // 设置系统日志等级
-    // SetLogLevel(5);
-
     // 初始化系统配置目录
     std::string server_config_dir= GetAbsPath(argv[1]);
     if (server_config_dir.empty()) {
@@ -74,6 +67,12 @@ int main(int argc, char** argv) {
         LOGFATAL("Load condig error.");
         return -1;
     }
+
+    // 设置库日志等级
+    xco::SetLogLevel(5);
+
+    // 设置系统日志等级
+    SetLogLevel(FtpServerConfigSgt.GetLogLevel());
 
     // 启动服务器
     Run();

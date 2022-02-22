@@ -25,6 +25,7 @@ enum FtpCmd {
     kFcRETR = 9,
     kFcSTOR = 10,
     kFcQUIT = 11,
+    kFcDELE = 12,
 };
 
 
@@ -69,6 +70,7 @@ public:
     ~FtpTransactionManager();
 public:
     int HandleRequest(const FtpRequest::Ptr req,
+                      FtpResponse::Ptr rsp,
                       FtpSession::Ptr session);
 
     template<typename TransType>
@@ -134,3 +136,4 @@ DEFINE_TRANSACTION(QUIT);
 DEFINE_SOCKET_TRANSACTION(LIST);
 DEFINE_SOCKET_TRANSACTION(RETR);
 DEFINE_SOCKET_TRANSACTION(STOR);
+DEFINE_TRANSACTION(DELE);

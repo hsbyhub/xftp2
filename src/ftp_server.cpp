@@ -20,16 +20,18 @@ void FtpServer::ClientHandle(xco::Socket::Ptr client) {
         if (!req) {
             continue;
         }
-        LOGDEBUG(XCO_EXP_VARS(req->ToString()));
+        auto rsp = FtpResponse::Create();
 
-        int state = FtpTransactionManagerSgt.HandleRequest(req, ftp_session);
+        LOGWARN("Recieved request," << XCO_EXP_VARS(*req));
+        int state = FtpTransactionManagerSgt.HandleRequest(req, rsp, ftp_session);
+        LOGWARN("Sended response," << XCO_EXP_VARS(*rsp));
         if (state == -1 || state == 221) {
             break;
         }
     }
 
     // 关闭会话
-    LOGDEBUG("close connect, " << XCO_EXP_VARS(client->ToString()));
+    LOGWARN("Session over, close connect, " << XCO_EXP_VARS(client->ToString()));
     ftp_session->Close();
 }
 

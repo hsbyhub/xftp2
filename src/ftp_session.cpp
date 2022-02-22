@@ -95,7 +95,6 @@ int FtpSession::SendResponse(FtpResponse::Ptr rsp) {
     if (!rsp) {
         return -1;
     }
-    LOGDEBUG(XCO_EXP_VARS(rsp->ToString()));
     auto buf = rsp->ToString();
     return Write(&buf[0], buf.size());
 }
@@ -117,10 +116,8 @@ void FtpSession::SetCurDir(const std::string& path) {
         new_dir += cur_dir + "/" + path;
     }
 
-    LOGDEBUG(XCO_EXP_VARS(root_dir, new_dir));
     // 解析新路径
     new_dir = GetAbsPath(root_dir + new_dir);
-    LOGDEBUG(XCO_EXP_VARS(root_dir, new_dir));
     auto pos = new_dir.find(root_dir);
     if (pos != 0) {
         new_dir = "/";
@@ -136,4 +133,8 @@ std::string FtpSession::GetCurDir() {
         return "/";
     }
     return cur_dir;
+}
+
+std::string FtpSession::GetAbsFilePath(const std::string &file_name) {
+    return FtpServerConfigSgt.GetRootDir() + cur_dir + "/" + file_name;
 }

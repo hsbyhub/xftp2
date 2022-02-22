@@ -37,11 +37,13 @@ public:
 
     bool OnReadElement(const BaseConfigLoader::Element& element) override;
 
-public:
-    const std::string GetRootDir() const { return root_dir;}
-
 private:
     std::string root_dir;
+    int log_level = 0;
+
+public:
+    FUNCTION_BUILDER_VAR_GETTER(RootDir, root_dir);
+    FUNCTION_BUILDER_VAR_GETTER(LogLevel, log_level);
 };
 #define FtpServerConfigSgt Singleton<FtpServerConfig>::Instance()
 

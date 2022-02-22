@@ -51,13 +51,17 @@ FtpTransactionManager::~FtpTransactionManager() {
 }
 
 int FtpTransactionManager::HandleRequest(const FtpRequest::Ptr req,
+                                         FtpResponse::Ptr rsp,
                                          FtpSession::Ptr session) {
-    auto rsp = FtpResponse::Create();
+    if (!req || !rsp || !session) {
+        return -1;
+    }
     int cmd = GetCmdFromStr(req->cmd);
     if (cmd == 0) {
         rsp->state_code = 202;
-        rsp->msg = "Invalid commanad";
+        rsp->msg = "Invalid command";
         session->SendResponse(rsp);
+        LOGWARN("recieved no recognize command, " << XCO_EXP_VARS(*req));
         return rsp->state_code;
     }
     auto it = cmd_to_trans_type_bucket_.find(cmd);
@@ -65,13 +69,12 @@ int FtpTransactionManager::HandleRequest(const FtpRequest::Ptr req,
         rsp->state_code = 202;
         rsp->msg = "Not support command";
         session->SendResponse(rsp);
+        LOGWARN("recieved no recognize command, " << XCO_EXP_VARS(*req));
         return rsp->state_code;
     }
 
     auto trans = it->second->Create();
     trans->session_ = session;
-
-    LOGDEBUG(XCO_EXP_VARS(session->GetCurDir()));
 
     int state = trans->OnRequest(req, rsp);
 
@@ -249,7 +252,7 @@ int FtpTransactionLIST::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 
     // 开始发送数据
     std::string data = "";
-    std::string cmd = "ls -l " + FtpServerConfigSgt.GetRootDir() + session_->cur_dir;
+    std::string cmd = "ls -l " + session_->GetAbsFilePath();
     FILE *file = popen(cmd.c_str(), "r");
     if (!file) {
         rsp->msg = "Open diretory fail.";
@@ -291,7 +294,7 @@ int FtpTransactionRETR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     session_->SendData("150 Connect success. Here comes the list data. \r\n");
 
     // 打开文件，开始传输
-    std::string path = FtpServerConfigSgt.GetRootDir() + session_->cur_dir + "/" + req->msg;
+    std::string path = session_->GetAbsFilePath(req->msg);
     auto file = fopen(path.c_str(), "rb");
     if (!file) {
         rsp->msg = "Open file fail.";
@@ -333,7 +336,7 @@ int FtpTransactionSTOR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     // 是否匿名
     if (session_->GetName().empty()) {
         rsp->msg = "Put file need user account login.";
-        return 532;
+        return 332;
     }
 
     // 建立连接
@@ -349,7 +352,7 @@ int FtpTransactionSTOR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     session_->SendData("150 Ok to send data. \r\n");
 
     // 开始传输
-    std::string path = FtpServerConfigSgt.GetRootDir() + session_->cur_dir + "/" + req->msg;
+    std::string path = session_->GetAbsFilePath(req->msg);
     auto file = fopen(path.c_str(), "wb");
     if (!file) {
         rsp->msg = "Open file fail.";
@@ -389,4 +392,27 @@ int FtpTransactionSTOR::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 int FtpTransactionQUIT::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
     rsp->msg = "Goodbye.";
     return 221;
+}
+
+int FtpTransactionDELE::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
+    // 检查状态
+    if (session_->GetState() != kFusLogin) {
+        rsp->msg = "No login.";
+        return 530;
+    }
+
+    // 是否匿名
+    if (session_->GetName().empty()) {
+        rsp->msg = "Delete file need user account login.";
+        return 332;
+    }
+
+    // 删除文件
+    std::string path = session_->GetAbsFilePath(req->msg);
+    if (remove(path.c_str()) == -1) {
+        return 550;
+    }
+
+    rsp->msg = "Ok to delete file.";
+    return 250;
 }

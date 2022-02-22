@@ -70,6 +70,7 @@ void FtpServerConfig::OnClear() {
 bool FtpServerConfig::OnReadElement(const BaseConfigLoader::Element &element) {
     root_dir = element.GetAs<std::string>("root_dir");
     root_dir = GetAbsPath(root_dir);
+    log_level = element.GetAs<int>("log_level");
     return !root_dir.empty();
 }
 
