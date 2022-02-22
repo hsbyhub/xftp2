@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(xftp2)
 
 # Config
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/xftp/bin)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "$ENV{CXXFLAAGS} -O3 -std=c++11 -g -Wall -Wno-deprecated -Werror -Wno-unused-function -Wno-builtin-macro-redefined")
 

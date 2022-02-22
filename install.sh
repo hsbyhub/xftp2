@@ -1,37 +1,57 @@
-project_dir=$(cd $(dirname $0); pwd)
-data_dir=${project_dir}/data
-build_dir=${project_dir}/build
-xftp_home=/usr/local/xftp
+# Define util function
+function EchoRed() {
+    echo -e "\033[1;31m${*}\033[0m"
+}
+function EchoGreen() {
+    echo -e "\033[1;32m${*}\033[0m"
+}
+function EchoPurple() {
+    echo -e "\033[1;35m${*}\033[0m"
+}
 
+# Set path var
+project_dir=$(cd $(dirname $0); pwd)
+install_dir=/usr/local
+xftp_home=${install_dir}/xftp
+
+# Install libxco
 git clone https://gitee.com/hsby/libxco
 cd libxco
 chmod a+x install.sh
 ./install.sh
+EchoGreen "Install libxco done."
 
-echo "Build xftp."
-rm -rf ${build_dir}
+# Build xftp
 cd ${project_dir}
-mkdir build && cd build
+rm -rf build
+mkdir build
+cd build
 cmake .. && make -j4
-echo "Build xftp done."
+EchoGreen "Build xftp done."
 
-echo "Copy xftp server to \"${xftp_home}\""
-rm -rf ${xftp_home}
-mkdir -p ${xftp_home}
-mkdir -p ${xftp_home}/bin
-mkdir -p ${xftp_home}/root
-cp -f xftp_server ${xftp_home}/bin
-cp -f ${data_dir}/server.cfg ${xftp_home}
-cp -f ${data_dir}/users.cfg ${xftp_home}
+# Install xftp
+cd ${project_dir}
+cp -rf xftp ${install_dir}
+EchoGreen "Install xftp done."
 
-echo "Copy xftp.servive to \"/etc/systemd/system/\""
-cp -f ${data_dir}/xftp.service /etc/systemd/system/
+# Install xftp.service
+cd ${project_dir}
+cp -f xftp/xftp.service /etc/systemd/system/
+EchoGreen "Install xftp.service done."
+
+# Start xftp.service
 systemctl daemon-reload
 systemctl enable xftp.service
 systemctl start xftp.service
+systemctl status xftp
+EchoGreen "Start xftp.service done."
 
-echo "xftp install and lauch done."
-echo "xftp home is \"${xftp_home}\""
-echo "xftp share diretory is \"${xftp_home}/root\""
-echo "Use \"systemctl\" to contral server, like \"systemctl status xftp.service\"."
-echo "Thank you."
+# Echo some tips
+echo ""
+EchoPurple "All xftp install is done."
+EchoPurple "This is some tips:"
+EchoPurple "-Default [Home]=\"${xftp_home}\""
+EchoPurple "-Default [Share Diretory]=\"${xftp_home}/root/\""
+EchoPurple "-Default [Config Diretory]=\"${xftp_home}/config/\""
+EchoPurple "-Use \"systemctl [operation] xftp\" to contral server."
+EchoPurple "Thank you."

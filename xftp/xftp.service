@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/root/
-ExecStart=/usr/local/xftp/bin/xftp_server /usr/local/xftp/
+ExecStart=/usr/local/xftp/bin/xftp_server /usr/local/xftp/config/
 Restart=always
 
 [Install]

@@ -1,0 +1,2 @@
+Thank you for use xftp.
+This file is in the share diretory root.
