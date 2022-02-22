@@ -9,12 +9,6 @@
 #include "ftp_transaction.h"
 #include "ftp_server_config.h"
 
-bool LoadAllConfig() {
-    bool ret = true;
-    ret &= FtpUsersConfigSgt.Load("users.cfg");
-    return ret;
-}
-
 void FtpServer::ClientHandle(xco::Socket::Ptr client) {
     // 创建会话
     auto ftp_session = FtpSession::Create(client);

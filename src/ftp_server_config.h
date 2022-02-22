@@ -10,15 +10,9 @@
 #include <xco/common.h>
 #include <unordered_map>
 
-class FtpServerConfig {
-private:
-    std::string root_dir;
-    std::string config_dir;
-public:
-    FUNCTION_BUILDER_VAR(RootDir, root_dir);
-    FUNCTION_BUILDER_VAR(ConfigDir, config_dir);
-};
-#define FtpServerConfigSgt Singleton<FtpServerConfig>::Instance()
+bool LoadAllConfig();
+const std::string GetFtpServerConfigDir();
+void SetFtpServerConfigDir(const std::string& path);
 
 class BaseConfigLoader {
 public:
@@ -36,6 +30,20 @@ public:
     virtual void OnClear() {}
     virtual bool OnReadElement(const Element& element) {return true;}
 };
+
+class FtpServerConfig : public BaseConfigLoader{
+public:
+    void OnClear() override;
+
+    bool OnReadElement(const BaseConfigLoader::Element& element) override;
+
+public:
+    const std::string GetRootDir() const { return root_dir;}
+
+private:
+    std::string root_dir;
+};
+#define FtpServerConfigSgt Singleton<FtpServerConfig>::Instance()
 
 class FtpUsersConfig : public BaseConfigLoader{
     struct Item {

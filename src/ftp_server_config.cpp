@@ -8,6 +8,23 @@
 #include "ftp_server_config.h"
 #include <fstream>
 
+std::string g_ftp_server_config_dir;
+
+bool LoadAllConfig() {
+    bool ret = true;
+    ret &= FtpServerConfigSgt.Load("server.cfg");
+    ret &= FtpUsersConfigSgt.Load("users.cfg");
+    return ret;
+}
+
+const std::string GetFtpServerConfigDir() {
+    return g_ftp_server_config_dir;
+}
+
+void SetFtpServerConfigDir(const std::string &path) {
+    g_ftp_server_config_dir = path;
+}
+
 template<typename T>
 const T BaseConfigLoader::Element::GetAs(const std::string &key) const {
     auto it = data.find(key);
@@ -22,7 +39,7 @@ const T BaseConfigLoader::Element::GetAs(const std::string &key) const {
 }
 
 bool BaseConfigLoader::Load(const std::string &file_name) {
-    auto file_path = FtpServerConfigSgt.GetConfigDir() + "/" + file_name;
+    auto file_path = GetFtpServerConfigDir() + "/" + file_name;
     std::ifstream ifs(file_path);
     if (!ifs) {
         return false;
@@ -45,6 +62,15 @@ bool BaseConfigLoader::Load(const std::string &file_name) {
         }
     }
     return true;
+}
+
+void FtpServerConfig::OnClear() {
+}
+
+bool FtpServerConfig::OnReadElement(const BaseConfigLoader::Element &element) {
+    root_dir = element.GetAs<std::string>("root_dir");
+    root_dir = GetAbsPath(root_dir);
+    return !root_dir.empty();
 }
 
 void FtpUsersConfig::OnClear() {

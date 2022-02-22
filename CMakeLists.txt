@@ -13,8 +13,8 @@ add_library(ftp STATIC ${files})
 target_link_libraries(ftp ${libs})
 
 # Add ftp_server target
-add_executable(ftp_server main.cpp)
-target_link_libraries(ftp_server ftp)
+add_executable(xftp_server main.cpp)
+target_link_libraries(xftp_server ftp)
 
 # Add test target
 #file(GLOB test_files ${PROJECT_SOURCE_DIR}/test/*.cpp)

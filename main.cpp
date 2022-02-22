@@ -9,10 +9,7 @@
 #include "ftp_server.h"
 #include "ftp_server_config.h"
 
-std::string root_dir;
-std::string config_dir;
-
-void OnStart() {
+void OnStartFtpServer() {
 
     // 初始化监听套接字
     auto listen_socket = xco::Socket::CreateTCP();
@@ -25,19 +22,18 @@ void OnStart() {
     if (!ftp_server->Init(listen_socket)) {
         LOGFATAL("Ftp server init fail");
         ftp_server->Stop();
-        return ;
+        exit(-1);
     }
 
     // 启动服务器
     if (!ftp_server->Start()) {
         LOGFATAL("Ftp server start fail");
         ftp_server->Stop();
-        return ;
+        exit(-1);
     }
 
     std::cout << "Ftp server start success." << std::endl;
-    std::cout << XCO_EXP_VARS(root_dir) << std::endl;
-    std::cout << XCO_EXP_VARS(config_dir) << std::endl;
+    std::cout << "root diretory=" << FtpServerConfigSgt.GetRootDir() << std::endl;
 }
 
 void Run() {
@@ -46,7 +42,7 @@ void Run() {
     xco::IoManager iom;
 
     // 添加启动协程
-    iom.Schedule(xco::Coroutine::Create(OnStart));
+    iom.Schedule(xco::Coroutine::Create(OnStartFtpServer));
 
     // 启动Io管理器
     iom.Start();
@@ -54,9 +50,9 @@ void Run() {
 }
 
 int main(int argc, char** argv) {
-    if (argc != 3) {
-        LOGFATAL("Usage: ftp_server [root diretory] [server config diretory]");
-        exit(-1);
+    if (argc != 2) {
+        LOGFATAL("Usage: ftp_server [server config diretory]");
+        return -1;
     }
 
     // 设置库日志等级
@@ -65,15 +61,21 @@ int main(int argc, char** argv) {
     // 设置系统日志等级
     // SetLogLevel(5);
 
-    // 初始化
-    root_dir = GetAbsPath(argv[1]);
-    config_dir= GetAbsPath(argv[2]);
-    ASSERT_MSG(!root_dir.empty(), "Bad root path");
-    ASSERT_MSG(!config_dir.empty(), "Bad config path");
-    FtpServerConfigSgt.SetRootDir(root_dir);
-    FtpServerConfigSgt.SetConfigDir(config_dir);
+    // 初始化系统配置目录
+    std::string server_config_dir= GetAbsPath(argv[1]);
+    if (server_config_dir.empty()) {
+        LOGFATAL("Bad server config diretory");
+        return -1;
+    }
+    SetFtpServerConfigDir(server_config_dir);
 
-    // 启动
+    // 加载配置
+    if (!LoadAllConfig()) {
+        LOGFATAL("Load condig error.");
+        return -1;
+    }
+
+    // 启动服务器
     Run();
 
     return 0;
