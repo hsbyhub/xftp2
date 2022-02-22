@@ -1,0 +1,13 @@
+[Unit]
+Description=xftp 1.0.1
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/
+ExecStart=/mnt/share/dev/xftp2/build/bin/ftp_server /root/ /mnt/share/dev/xftp2/config
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
