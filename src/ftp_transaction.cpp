@@ -127,7 +127,7 @@ int FtpTransactionUSER::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
 
     session_->SetName(user->name);
     session_->SetState(kFusNeedPass);
-    rsp->msg = "Valid user, need password.";
+    rsp->msg = "Need password.";
     return 331;
 }
 
@@ -142,7 +142,7 @@ int FtpTransactionPASS::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     if (!user) {
         return -1;
     }
-
+    LOGDEBUG(XCO_EXP_VARS(req->msg, req->msg.size(), user->name, user->pass, user->pass.size()));
     if (user->pass != req->msg) {
         return -1;
     }

@@ -53,3 +53,17 @@ std::string GetAbsPath(const std::string& path) {
     }
     return res;
 }
+
+void StringRemoveHeadTailSpace(std::string &str) {
+    if (str.empty()) {
+        return ;
+    }
+    int begin = 0;
+    for (; begin < (int)str.size() && isspace(str[begin]); begin++) {}
+    int end = str.size() - 1;
+    for(; end >= 0 && isspace(str[end]); end--) {}
+    if (begin > end) {
+        str = "";
+    }
+    str = str.substr(begin, end + 1 - begin);
+}

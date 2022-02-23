@@ -14,6 +14,13 @@ project_dir=$(cd $(dirname $0); pwd)
 install_dir=/usr/local
 xftp_home=${install_dir}/xftp
 
+# Goto build directory
+cd ${project_dir}
+rm -rf build
+mkdir build
+cd build
+EchoGreen "In ${project_dir}/build"
+
 # Install libxco
 git clone https://gitee.com/hsby/libxco
 cd libxco
@@ -22,10 +29,7 @@ chmod a+x install.sh
 EchoGreen "Install libxco done."
 
 # Build xftp
-cd ${project_dir}
-rm -rf build
-mkdir build
-cd build
+cd ${project_dir}/build
 cmake .. && make -j4
 EchoGreen "Build xftp done."
 

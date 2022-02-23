@@ -49,12 +49,15 @@ bool BaseConfigLoader::Load(const std::string &file_name) {
         Element element;
         std::vector<std::string> pair_strs;
         StringSplitToVectorAs(line, '|', pair_strs);
-        for (auto pair_str : pair_strs) {
+        for (auto& pair_str : pair_strs) {
+            StringRemoveHeadTailSpace(pair_str);
             std::vector<std::string> pair;
             StringSplitToVectorAs(pair_str, ':', pair);
             if (pair.size() != 2) {
                 continue;
             }
+            StringRemoveHeadTailSpace(pair[0]);
+            StringRemoveHeadTailSpace(pair[1]);
             element.data[pair[0]] = pair[1];
         }
         if (!OnReadElement(element)) {

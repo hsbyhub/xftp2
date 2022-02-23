@@ -34,11 +34,3 @@ void FtpServer::ClientHandle(xco::Socket::Ptr client) {
     LOGWARN("Session over, close connect, " << XCO_EXP_VARS(client->ToString()));
     ftp_session->Close();
 }
-
-bool FtpServer::Init(xco::Socket::Ptr socket, xco::IoManager *io_manager, uint32_t client_handler_cnt) {
-    bool ret = LoadAllConfig();
-    if (!ret) {
-        return ret;
-    }
-    return TcpServer::Init(socket, io_manager, client_handler_cnt);
-}

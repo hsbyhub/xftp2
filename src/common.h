@@ -25,8 +25,8 @@ bool StringSplitToVectorAs(const std::string& str, char s, std::vector<T>& vec) 
         if (i == str.size() || str[i] == s) {
             try {
                 vec.push_back(boost::lexical_cast<T>(&str[pre], i - pre));
+                pre = i + 1;
             } catch (...) {}
-            pre = i + 1;
         }
     }
     return true;
@@ -67,3 +67,8 @@ void SetLogLevel(int level);
  * @retval [empty string] bad path
  */
 std::string GetAbsPath(const std::string& path);
+
+/**
+ * @brief 取出字符串首尾的空格
+ */
+void StringRemoveHeadTailSpace(std::string& str);
