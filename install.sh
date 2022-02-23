@@ -30,7 +30,8 @@ EchoGreen "Install libxco done."
 
 # Build xftp
 cd ${project_dir}/build
-cmake .. && make -j4
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j4
 EchoGreen "Build xftp done."
 
 # Install xftp

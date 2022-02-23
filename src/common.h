@@ -36,10 +36,11 @@ bool StringSplitToVectorAs(const std::string& str, char s, std::vector<T>& vec) 
 void FormatDate(std::ostream& os);
 int GetLogLevel();
 void SetLogLevel(int level);
-#define DEBUG 1
-#define WARN  2
-#define ERROR 3
-#define FATAL 4
+#define DEBUG   0
+#define INFO    1
+#define WARN    2
+#define ERROR   3
+#define FATAL   4
 #define LOG_IF_LEVEL(level, msg)                                \
         if (level >= GetLogLevel()){                            \
              std::cout  << __FILE__ << ":" << __LINE__ << "|";  \
@@ -47,10 +48,16 @@ void SetLogLevel(int level);
              std::cout  << #level << "|"                        \
                         << msg << std::endl << std::flush;      \
         }
-#define LOGDEBUG(msg)   LOG_IF_LEVEL(DEBUG, msg)
+#ifdef NDEBUG
+#define LOGD(msg)
+#else
+#define LOGD(msg)       LOG_IF_LEVEL(DEBUG, msg)
+#endif
+#define LOGINFO(msg)    LOG_IF_LEVEL(INFO, msg)
 #define LOGWARN(msg)    LOG_IF_LEVEL(WARN, msg)
 #define LOGERROR(msg)   LOG_IF_LEVEL(ERROR, msg)
 #define LOGFATAL(msg)   LOG_IF_LEVEL(FATAL, msg)
+
 
 /**
  * @brief 断言

@@ -56,20 +56,12 @@ int FtpTransactionManager::HandleRequest(const FtpRequest::Ptr req,
     if (!req || !rsp || !session) {
         return -1;
     }
-    int cmd = GetCmdFromStr(req->cmd);
-    if (cmd == 0) {
-        rsp->state_code = 202;
-        rsp->msg = "Invalid command";
-        session->SendResponse(rsp);
-        LOGWARN("recieved no recognize command, " << XCO_EXP_VARS(*req));
-        return rsp->state_code;
-    }
-    auto it = cmd_to_trans_type_bucket_.find(cmd);
+    auto it = cmd_to_trans_type_bucket_.find(req->cmd);
     if (it == cmd_to_trans_type_bucket_.end()) {
         rsp->state_code = 202;
         rsp->msg = "Not support command";
         session->SendResponse(rsp);
-        LOGWARN("recieved no recognize command, " << XCO_EXP_VARS(*req));
+        LOGWARN("recieved no recognize command, " << EX_STRING_VARS(*req));
         return rsp->state_code;
     }
 
@@ -87,25 +79,6 @@ int FtpTransactionManager::HandleRequest(const FtpRequest::Ptr req,
 
     return state;
 }
-
-bool FtpTransactionManager::SetCmdFromStr(const std::string &cmd_str, int cmd) {
-    auto& it_cmd = str_to_cmd_[cmd_str];
-    if (it_cmd) {
-        return false;
-    }
-    it_cmd = cmd;
-    return true;
-}
-
-int FtpTransactionManager::GetCmdFromStr(const std::string& cmd_str) {
-    for (auto it : str_to_cmd_) {
-        if (strcasecmp(it.first.c_str(), cmd_str.c_str()) == 0) {
-            return it.second;
-        }
-    }
-    return 0;
-}
-
 
 int FtpTransactionUSER::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rsp) {
     // 匿名登录
@@ -142,7 +115,6 @@ int FtpTransactionPASS::OnRequest(const FtpRequest::Ptr req, FtpResponse::Ptr rs
     if (!user) {
         return -1;
     }
-    LOGDEBUG(XCO_EXP_VARS(req->msg, req->msg.size(), user->name, user->pass, user->pass.size()));
     if (user->pass != req->msg) {
         return -1;
     }
