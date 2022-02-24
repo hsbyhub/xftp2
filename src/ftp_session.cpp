@@ -44,6 +44,8 @@ FtpRequest::Ptr FtpSession::GetRequest() {
                             msg_len = parse_off - 1 - msg_off;
                         }else if (cmd_off != -1) {
                             cmd_len = parse_off - 1 - cmd_off;
+                        }else {
+                            return nullptr;
                         }
                         is_finish = true;
                         break;
