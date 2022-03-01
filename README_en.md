@@ -1,7 +1,7 @@
 # xftp2
 
 ---
-Author：SenxinXie(hsbymail@163.com)
+Author：hsby(XieSenxin hsbymail@163.com)
 
 [点击查看中文README](./README.md)
 
