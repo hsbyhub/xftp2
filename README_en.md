@@ -38,7 +38,7 @@ chmod a+x install.sh
 sudo ./install.sh
 ```
 
-![image-20220224104627789](https://gitee.com/hsby/img/raw/master/202202241046016.png)
+![image-20220312101537066](https://raw.githubusercontent.com/hsbyhub/ximg/main/202203121015105.png)
 
 ## Usage
 Use FileZilla for example:  
@@ -46,13 +46,13 @@ Establish a new site.
 The host is the host IP where the server program is located, port 21. 
 The encryption protocol is "plaintext transmission". 
 The default account is [root] and the password is [123456].
-![image-20220224103019039](https://gitee.com/hsby/img/raw/master/202202241030104.png)
+![image-20220312103515984](https://raw.githubusercontent.com/hsbyhub/ximg/main/202203121035050.png)
 
 In transmission settings, select active mode
-![image-20220224103111846](https://gitee.com/hsby/img/raw/master/202202241031909.png)
+![image-20220312103537784](https://raw.githubusercontent.com/hsbyhub/ximg/main/202203121035836.png)
 
 Click connect
-![image-20220224104847191](https://gitee.com/hsby/img/raw/master/202202241048264.png)
+![image-20220312103600694](https://raw.githubusercontent.com/hsbyhub/ximg/main/202203121036762.png)
 
 Download server share file /welcome.txt
-![image-20220224105038377](https://gitee.com/hsby/img/raw/master/202202241050450.png)
+![image-20220312103636355](https://raw.githubusercontent.com/hsbyhub/ximg/main/202203121037782.png)

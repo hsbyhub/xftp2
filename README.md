@@ -38,19 +38,20 @@ chmod a+x install.sh
 sudo ./install.sh
 ```
 这是我在虚拟机linux上安装的样子:
-![image-20220224104627789](https://gitee.com/hsby/img/raw/master/202202241046841.png)
+![image-20220312101537066](https://raw.githubusercontent.com/hsbyhub/ximg/main/202203121015105.png)
 
 ## 使用
 
 这里以FileZilla(开源FTP客户端)为例:  
 建立新站点，主机是服务器程序所在主机ip,  端口21，加密协议选择"明文传输"， 默认账号 root, 密码 123456
-![image-20220224103019039](https://gitee.com/hsby/img/raw/master/202202241030104.png)
+![image-20220312103515984](https://raw.githubusercontent.com/hsbyhub/ximg/main/202203121035050.png)
 
 传输设置中，选择主动模式
-![image-20220224103111846](https://gitee.com/hsby/img/raw/master/202202241031909.png)
+![image-20220312103537784](https://raw.githubusercontent.com/hsbyhub/ximg/main/202203121035836.png)
 
 点击连接
-![image-20220224104847191](https://gitee.com/hsby/img/raw/master/202202241048264.png)
+![image-20220312103600694](https://raw.githubusercontent.com/hsbyhub/ximg/main/202203121036762.png)
 
 下载 /welcome.txt
-![image-20220224105038377](https://gitee.com/hsby/img/raw/master/202202241050450.png)
+![image-20220312103636355](https://raw.githubusercontent.com/hsbyhub/ximg/main/202203121037782.png)
+
